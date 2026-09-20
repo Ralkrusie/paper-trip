@@ -1,5 +1,5 @@
 /**
- * 行迹 · 启动装配
+ * Paper Trip · 启动装配
  * 初始化数据层 → 工作台 → 高德地图，并把地图回调接到工作台。
  */
 document.addEventListener('DOMContentLoaded', function () {

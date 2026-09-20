@@ -1,6 +1,6 @@
-# 行迹 · 轻量行程规划
+# Paper Trip · 轻量行程规划
 
-> Xingji — a zero-build, pure front-end trip planner built on AMap.
+> Paper Trip — a zero-build, pure front-end trip planner built on AMap.
 
 一个**零部署、纯前端**的个人行程规划工具：在高德地图上收集地点、编排多日行程、画路线、做统计。
 数据保存在浏览器本地（localStorage），导出一个 JSON 就是完整备份。
@@ -47,9 +47,9 @@ http://127.0.0.1:8080/
 
 纯静态站点，可直接用 GitHub Pages 免费托管：
 
-1. 在 GitHub 新建仓库（如 `xingji-planner`），把本仓库推送上去
+1. 在 GitHub 新建仓库（如 `paper-trip`），把本仓库推送上去
 2. 仓库 **Settings → Pages** → Source 选 `Deploy from a branch`，分支 `main`、目录 `/ (root)`，保存
-3. 稍等 1–2 分钟，访问 `https://<用户名>.github.io/xingji-planner/`
+3. 稍等 1–2 分钟，访问 `https://<用户名>.github.io/paper-trip/`
 
 > **安全提示**：高德 Key 写在前端代码里，托管后必然公开（纯前端地图应用都是如此）。建议到高德开放平台给 Key 配置**域名白名单**（加上你的 `*.github.io`），防止被盗用额度。
 
