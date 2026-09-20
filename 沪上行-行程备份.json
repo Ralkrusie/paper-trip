@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "trip": {
+    "title": "沪上行 · 10月3–4日",
+    "note": "住宿：汉庭酒店（上海田子坊店）｜10月3日 14:00 后入住，10月4日 12:00 前退房｜行李：两个小挎包｜10月4日 20:00 上海南站乘火车离开"
+  },
+  "categories": [
+    {
+      "id": "transport",
+      "name": "交通",
+      "color": "#5b8c8c"
+    },
+    {
+      "id": "hotel",
+      "name": "住宿",
+      "color": "#4e85c6"
+    },
+    {
+      "id": "dining",
+      "name": "餐饮",
+      "color": "#d47a4e"
+    },
+    {
+      "id": "activity",
+      "name": "活动",
+      "color": "#b1483d"
+    }
+  ],
+  "places": [
+    {
+      "id": "place-mu9mnlyr-nojak",
+      "name": "上海南站",
+      "lng": 121.429462,
+      "lat": 31.153127,
+      "categoryId": "transport",
+      "address": "沪闵路9001号",
+      "note": ""
+    },
+    {
+      "id": "place-mu9mnm30-ofby3",
+      "name": "汉庭酒店（上海田子坊店）",
+      "lng": 121.47242,
+      "lat": 31.203067,
+      "categoryId": "hotel",
+      "address": "南塘浜路102号",
+      "note": ""
+    },
+    {
+      "id": "place-mu9mnmb1-ejj27",
+      "name": "衡复音乐街区",
+      "lng": 121.454668,
+      "lat": 31.213711,
+      "categoryId": "activity",
+      "address": "汾阳路20号一带 · 衡复音乐街区",
+      "note": ""
+    },
+    {
+      "id": "place-mu9mnmdk-45g84",
+      "name": "上音歌剧院",
+      "lng": 121.455425,
+      "lat": 31.214725,
+      "categoryId": "activity",
+      "address": "汾阳路6号(陕西南路地铁站7号口步行350米)",
+      "note": ""
+    },
+    {
+      "id": "place-mu9mnmoa-7qrzj",
+      "name": "豫园",
+      "lng": 121.492497,
+      "lat": 31.227714,
+      "categoryId": "activity",
+      "address": "福佑路168号",
+      "note": ""
+    },
+    {
+      "id": "place-mu9mnmsu-uiclp",
+      "name": "田子坊",
+      "lng": 121.468662,
+      "lat": 31.208197,
+      "categoryId": "activity",
+      "address": "泰康路210号(打浦桥地铁站1号口旁)",
+      "note": ""
+    },
+    {
+      "id": "place-mu9mopdo-1wimu",
+      "name": "武康大楼",
+      "lng": 121.438278,
+      "lat": 31.20443,
+      "categoryId": "activity",
+      "address": "淮海中路1850号",
+      "note": ""
+    },
+    {
+      "id": "place-mu9moq8g-10c4g",
+      "name": "安福路",
+      "lng": 121.444117,
+      "lat": 31.214114,
+      "categoryId": "activity",
+      "address": "徐汇区",
+      "note": ""
+    }
+  ],
+  "days": [
+    {
+      "id": "day-mu9xdsn7-a64ai",
+      "name": "Day 3",
+      "date": "2026-10-02",
+      "items": []
+    },
+    {
+      "id": "day-mu9mnlth-ghcay",
+      "name": "10月3日",
+      "date": "2026-10-03",
+      "items": [
+        {
+          "id": "item-mu9mnmsz-b4mo1",
+          "placeId": "place-mu9mnlyr-nojak",
+          "time": "06:14",
+          "stay": "20",
+          "note": "06:00 到达；地铁 1 号线往市区（约 40 分钟）",
+          "disabled": false,
+          "leg": {
+            "mode": "metro",
+            "note": "地铁 1 号线 · 上海南站上车"
+          }
+        },
+        {
+          "id": "item-mu9mnmt3-0339e",
+          "placeId": "place-mu9mnmb1-ejj27",
+          "time": "",
+          "stay": "150",
+          "note": "上午：衡复音乐街区一带散步（具体点位待定）",
+          "disabled": false,
+          "leg": {
+            "mode": "bike",
+            "note": ""
+          }
+        },
+        {
+          "id": "item-mu9mnmt8-9t8y1",
+          "placeId": "place-mu9mnm30-ofby3",
+          "time": "14:00",
+          "stay": "240",
+          "note": "14:00 入住，下午休息",
+          "disabled": false,
+          "leg": {
+            "mode": "other",
+            "note": "下午休息"
+          }
+        },
+        {
+          "id": "item-mu9mnmtl-5grs3",
+          "placeId": "place-mu9mnm30-ofby3",
+          "time": "18:15",
+          "stay": "0",
+          "note": "18:15 出发去上音歌剧院（步行约 25–35 分钟）",
+          "disabled": false,
+          "leg": {
+            "mode": "walk",
+            "note": ""
+          }
+        },
+        {
+          "id": "item-mu9mnmtp-zb3to",
+          "placeId": "place-mu9mnmdk-45g84",
+          "time": "19:15",
+          "stay": "150",
+          "note": "19:30 Undertale 音乐会（提前入场）",
+          "disabled": false,
+          "leg": {
+            "mode": "walk",
+            "note": ""
+          }
+        },
+        {
+          "id": "item-mu9yvxvl-xiscn",
+          "placeId": "place-mu9mnm30-ofby3",
+          "time": "",
+          "stay": "",
+          "note": "散场后回酒店休息",
+          "disabled": false,
+          "leg": {
+            "mode": "",
+            "note": ""
+          }
+        }
+      ]
+    },
+    {
+      "id": "day-mu9mnmsx-p623o",
+      "name": "10月4日",
+      "date": "2026-10-04",
+      "items": [
+        {
+          "id": "item-mu9mnmty-q6by8",
+          "placeId": "place-mu9mnm30-ofby3",
+          "time": "12:00",
+          "stay": "30",
+          "note": "12:00 前退房；上午可去武康路 / 安福路，或豫园（见地点库候选）",
+          "disabled": false,
+          "leg": {
+            "mode": "metro",
+            "note": "地铁 9 号线转 3 号线"
+          }
+        },
+        {
+          "id": "item-mu9mnmu3-gb4ni",
+          "placeId": "place-mu9mnlyr-nojak",
+          "time": "17:30",
+          "stay": "150",
+          "note": "17:30 前到站；20:00 火车离开",
+          "disabled": false,
+          "leg": {
+            "mode": "",
+            "note": ""
+          }
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "mapStyle": "normal",
+    "viewMode": "2D"
+  },
+  "view": {
+    "lng": 121.460692,
+    "lat": 31.198139,
+    "zoom": 14.75
+  }
+}

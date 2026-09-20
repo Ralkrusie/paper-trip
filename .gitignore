@@ -1,0 +1,22 @@
+# 依赖 / 虚拟环境
+.venv/
+node_modules/
+
+# 旧作业照片素材（102 MB，应用已不引用，不随仓库发布）
+static/
+
+# 系统文件
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 编辑器
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local History for Visual Studio Code
+.history/

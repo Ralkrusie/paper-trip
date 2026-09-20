@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#17211f">
+  <title>行迹 · 轻量行程规划</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script defer src="js/store.js"></script>
+  <script defer src="js/amap.js"></script>
+  <script defer src="js/charts.js"></script>
+  <script defer src="js/workbench.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+
+<body>
+  <noscript>
+    <div class="noscript-notice">此页面需要 JavaScript 才能运行，请启用后刷新。</div>
+  </noscript>
+
+  <div id="app" class="app">
+    <aside id="sidebar" class="sidebar" aria-label="行程面板">
+      <header class="side-head">
+        <span class="brand-seal" aria-hidden="true">行</span>
+        <div class="brand-text">
+          <input id="trip-title" class="trip-title" type="text" maxlength="40" value="我的行程" aria-label="行程名称">
+          <p class="brand-sub">轻量行程规划</p>
+        </div>
+        <button id="trip-edit-btn" class="icon-btn side-edit" type="button" title="行程信息 / 备注"
+          aria-label="编辑行程信息">✎</button>
+      </header>
+
+      <nav class="side-tabs" role="tablist" aria-label="面板切换">
+        <button id="tab-itinerary" class="side-tab is-active" type="button" role="tab" aria-selected="true"
+          aria-controls="pane-itinerary">行程</button>
+        <button id="tab-library" class="side-tab" type="button" role="tab" aria-selected="false"
+          aria-controls="pane-library">地点库</button>
+      </nav>
+
+      <section id="pane-itinerary" class="side-pane is-active" role="tabpanel" aria-labelledby="tab-itinerary">
+        <div class="day-bar">
+          <div id="day-tabs" class="day-tabs" role="tablist" aria-label="日期切换"></div>
+          <button id="add-day-btn" class="ghost-btn slim" type="button" title="增加一天" aria-label="增加一天">＋</button>
+        </div>
+        <div class="day-meta">
+          <span id="day-summary" class="day-summary">—</span>
+          <div class="day-meta-actions">
+            <button id="day-edit-btn" class="ghost-btn slim" type="button" title="编辑这一天">✎</button>
+            <button id="fit-day-btn" class="ghost-btn slim" type="button">路线总览</button>
+            <button id="play-day-btn" class="ghost-btn slim accent" type="button" aria-pressed="false">▶ 浏览</button>
+          </div>
+        </div>
+        <ol id="item-list" class="item-list" aria-label="当天行程"></ol>
+        <div id="itinerary-empty" class="empty-tip" hidden>
+          <p>这一天还没有安排。</p>
+          <p>到「地点库」把地点加进来，或点击地图空白处新建地点。</p>
+        </div>
+      </section>
+
+      <section id="pane-library" class="side-pane" role="tabpanel" aria-labelledby="tab-library" hidden>
+        <div class="lib-tools">
+          <input id="lib-search" class="text-input" type="search" placeholder="搜索地点名称 / 地址…" aria-label="搜索地点">
+          <div id="lib-categories" class="chip-row" aria-label="分类筛选"></div>
+        </div>
+        <ul id="place-list" class="place-list"></ul>
+        <div id="library-empty" class="empty-tip" hidden>
+          <p>地点库还是空的。</p>
+          <p>点击地图任意位置即可添加第一个地点。</p>
+        </div>
+      </section>
+
+      <footer class="side-foot">
+        <button id="new-place-btn" class="primary-btn" type="button">＋ 新建地点</button>
+        <button id="pick-map-btn" class="ghost-btn" type="button" title="点击后在地图上选择坐标">📍 地图选点</button>
+      </footer>
+    </aside>
+
+    <main class="map-stage" aria-label="行程地图">
+      <div id="amap-container"></div>
+      <div class="map-tone" aria-hidden="true"></div>
+      <div class="map-transition-overlay" aria-hidden="true"></div>
+
+      <div class="map-search" role="search">
+        <input id="global-search" class="map-search-input" type="search" placeholder="搜索地点或地址，如「汾阳路6号」"
+          aria-label="搜索地点或地址">
+        <button id="global-search-btn" class="ghost-btn slim" type="button">搜索</button>
+        <ul id="global-results" class="map-results" hidden></ul>
+      </div>
+
+      <div class="map-events" role="toolbar" aria-label="地图工具">
+        <button id="stats-btn" class="map-action" type="button">📊 统计</button>
+        <button id="itinerary-btn" class="map-action" type="button" title="导出行程单（离线 HTML，可发到手机，可打印）">行程单</button>
+        <button id="style-btn" class="map-action" type="button" title="切换地图风格（暗黑 / 标准 / 卫星）">风格</button>
+        <button id="view-btn" class="map-action" type="button" title="切换 2D / 3D 视图">3D</button>
+        <button id="help-btn" class="map-action" type="button">帮助</button>
+      </div>
+
+      <div class="map-status" aria-live="polite">
+        <span class="map-status-mark" aria-hidden="true"></span>
+        <span id="map-status">正在加载地图…</span>
+      </div>
+
+      <div id="map-empty" class="map-empty" hidden>
+        <p class="map-empty-title">点击地图任意位置</p>
+        <p>添加你的第一个地点</p>
+        <p class="map-empty-sub">或使用左上角搜索，可精确到门牌号</p>
+        <button id="map-empty-btn" class="ghost-btn" type="button">改为手动输入</button>
+      </div>
+
+      <button id="sheet-toggle" class="sheet-toggle" type="button" aria-expanded="false">行程</button>
+    </main>
+  </div>
+
+  <!-- 地点编辑 -->
+  <dialog id="place-modal" class="app-modal">
+    <form id="place-form" class="modal-card">
+      <header class="modal-head">
+        <h2 id="place-modal-title">新建地点</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>名称 *</span>
+          <input id="place-name" type="text" maxlength="60" required placeholder="例如：外滩">
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>分类</span>
+            <select id="place-category"></select>
+          </label>
+          <label class="field field-inline">
+            <input id="place-add-day" type="checkbox" checked>
+            <span id="place-add-day-label">保存后加入 Day 1</span>
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span>经度 *</span>
+            <input id="place-lng" type="number" step="0.000001" required placeholder="121.4737">
+          </label>
+          <label class="field">
+            <span>纬度 *</span>
+            <input id="place-lat" type="number" step="0.000001" required placeholder="31.2304">
+          </label>
+        </div>
+        <div class="field">
+          <span>地址</span>
+          <input id="place-address" type="text" maxlength="120" placeholder="自动填充或手动填写">
+        </div>
+        <div class="field">
+          <span>备注</span>
+          <textarea id="place-note" rows="2" maxlength="300" placeholder="开放时间、预约信息、小贴士…"></textarea>
+        </div>
+        <div class="modal-inline-actions">
+          <button id="place-pick-btn" class="ghost-btn slim" type="button">📍 在地图上重新选点</button>
+        </div>
+
+        <div class="poi-search">
+          <div class="poi-search-row">
+            <input id="poi-keyword" class="text-input" type="text" placeholder="搜索地点或地址（支持精确到 xx路xx号）">
+            <button id="poi-search-btn" class="ghost-btn" type="button">搜索</button>
+          </div>
+          <ul id="poi-results" class="poi-results" hidden></ul>
+        </div>
+      </div>
+      <footer class="modal-foot">
+        <button id="place-delete-btn" class="danger-btn" type="button" hidden>删除</button>
+        <span class="foot-spacer"></span>
+        <button class="ghost-btn" type="button" data-close-modal>取消</button>
+        <button class="primary-btn" type="submit">保存</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 行程项编辑 -->
+  <dialog id="item-modal" class="app-modal">
+    <form id="item-form" class="modal-card">
+      <header class="modal-head">
+        <h2>编辑行程项</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <p id="item-place-name" class="item-place-name">—</p>
+        <div class="field-row">
+          <label class="field">
+            <span>时间（固定时刻）</span>
+            <input id="item-time" type="time">
+          </label>
+          <label class="field">
+            <span>停留（分钟）</span>
+            <input id="item-stay" type="number" min="0" step="5" placeholder="60">
+          </label>
+        </div>
+        <label class="field">
+          <span>所属天</span>
+          <select id="item-day"></select>
+        </label>
+        <div class="field">
+          <span>备注</span>
+          <textarea id="item-note" rows="2" maxlength="200" placeholder="预约、入场时间…"></textarea>
+        </div>
+        <p class="modal-hint">时间 = 硬性时刻（如演出 19:30）；留空则按上一站 + 停留 + 通勤估算推算。通勤方式在两站之间的「通勤行」里设置。</p>
+      </div>
+      <footer class="modal-foot">
+        <button id="item-delete-btn" class="danger-btn" type="button">移除该站点</button>
+        <span class="foot-spacer"></span>
+        <button class="ghost-btn" type="button" data-close-modal>取消</button>
+        <button class="primary-btn" type="submit">保存</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 通勤方式 -->
+  <dialog id="leg-modal" class="app-modal">
+    <form id="leg-form" class="modal-card narrow">
+      <header class="modal-head">
+        <h2>通勤方式</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <p id="leg-route" class="item-place-name">—</p>
+        <div id="leg-modes" class="mode-grid" role="radiogroup" aria-label="选择通勤方式"></div>
+        <p id="leg-estimate" class="modal-hint">—</p>
+        <label class="field">
+          <span>备注</span>
+          <input id="leg-note" type="text" maxlength="80" placeholder="例如：地铁 1 号线 · 衡山路站上车">
+        </label>
+      </div>
+      <footer class="modal-foot">
+        <button id="leg-clear-btn" class="danger-btn" type="button">清除设置</button>
+        <span class="foot-spacer"></span>
+        <button class="ghost-btn" type="button" data-close-modal>取消</button>
+        <button class="primary-btn" type="submit">保存</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 天编辑 -->
+  <dialog id="day-modal" class="app-modal">
+    <form id="day-form" class="modal-card narrow">
+      <header class="modal-head">
+        <h2>编辑这一天</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>名称</span>
+          <input id="day-name" type="text" maxlength="20" placeholder="Day 1">
+        </label>
+        <label class="field">
+          <span>日期（可选）</span>
+          <input id="day-date" type="date">
+        </label>
+        <p class="modal-hint">设置日期后，标签会显示日期并按日期自动排序；新增加的一天会自动顺延到最后一个日期之后。</p>
+      </div>
+      <footer class="modal-foot">
+        <button id="day-delete-btn" class="danger-btn" type="button">删除这一天</button>
+        <span class="foot-spacer"></span>
+        <button class="ghost-btn" type="button" data-close-modal>取消</button>
+        <button class="primary-btn" type="submit">保存</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 行程信息 -->
+  <dialog id="trip-modal" class="app-modal">
+    <form id="trip-form" class="modal-card narrow">
+      <header class="modal-head">
+        <h2>行程信息</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>名称</span>
+          <input id="trip-modal-title" type="text" maxlength="40" placeholder="我的行程">
+        </label>
+        <label class="field">
+          <span>备注 / 须知</span>
+          <textarea id="trip-note" rows="5" maxlength="600" placeholder="住宿、退房时间、行李、紧急联系…（会写进导出的行程单）"></textarea>
+        </label>
+      </div>
+      <footer class="modal-foot">
+        <span class="foot-spacer"></span>
+        <button class="ghost-btn" type="button" data-close-modal>取消</button>
+        <button class="primary-btn" type="submit">保存</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 统计 -->
+  <dialog id="stats-modal" class="stats-modal">
+    <div class="stats-card">
+      <header class="modal-head">
+        <h2>行程统计</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      </header>
+      <p id="stats-summary" class="stats-summary">—</p>
+      <div class="stats-body">
+        <div id="chart-day-count" class="chart-panel"></div>
+        <div id="chart-day-distance" class="chart-panel"></div>
+        <div id="chart-category" class="chart-panel"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 帮助 -->
+  <dialog id="help-modal" class="app-modal">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>使用说明</h2>
+        <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      </header>
+      <div class="modal-body help-body">
+        <ol>
+          <li><strong>添加地点</strong>：点击地图空白处直接落点新建；也可以用左上角搜索框搜地点或地址（地址可精确到门牌号，选结果看预览，点 ＋ 加入当天）。</li>
+          <li><strong>编排行程</strong>：在「地点库」点 ＋ 把地点加入当前天（同一天可重复加，例如「入住酒店 / 回酒店」）；拖动卡片排序（手机上长按卡片即可拖动），拖到别的日期标签上即可跨天移动。</li>
+          <li><strong>通勤方式</strong>：点两站之间的「通勤行」选步行 / 骑行 / 驾驶 / 出租 / 公交 / 地铁 / 动车 /
+            其他——除「其他」外都会按两站直线距离（×1.3 绕路系数）与各方式均速估算时间，可加备注（如地铁几号线）。</li>
+          <li><strong>路线颜色</strong>：两站之间连线的颜色表示这段路在行程里需要走的次数——玫粉 = 1 次，粉红 = 2 次（如往返酒店），玫紫 = 3 次，紫色 = 4 次及以上（通勤行会标注
+            ×N）；白色小箭头沿路线循环流动，指示行进方向；地图标记会随缩放自动放大缩小。</li>
+          <li><strong>移除与恢复</strong>：点 ⊖ 会移除该站点（变灰沉到当天最下方，不再计入时间轴、地图与统计），随时可恢复或彻底删除。</li>
+          <li><strong>时间轴</strong>：行程项填了时间 = 硬性时刻（如演出 19:30）；留空则按「上一站 + 停留 + 通勤」自动推算。卡片上圆点后的时间即推算结果，迟到会标红。</li>
+          <li><strong>手机查看</strong>：点「行程单」导出离线 HTML 发到手机（微信文件传输助手即可），离线可看，站点里的「高德导航」可一键唤起地图 App。同一 Wi-Fi
+            下，手机浏览器也能访问电脑的局域网地址实时使用。</li>
+          <li><strong>数据保存</strong>：数据自动保存在浏览器本地（localStorage）。换浏览器或清理缓存前，请先导出 JSON 备份。</li>
+        </ol>
+        <div class="help-data">
+          <h3>数据管理</h3>
+          <div class="help-data-actions">
+            <button id="help-itinerary-btn" class="ghost-btn" type="button">导出行程单 HTML</button>
+            <button id="help-export-btn" class="ghost-btn" type="button">导出 JSON</button>
+            <button id="help-import-btn" class="ghost-btn" type="button">导入 JSON</button>
+            <button id="help-clear-btn" class="danger-btn" type="button">清空全部数据</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <input id="import-file" type="file" accept="application/json,.json" hidden>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="amap-fallback" class="map-fallback" role="status" hidden>
+    高德地图未能加载，请检查网络或 Key 配置。地点数据仍可编辑，但地图相关功能暂不可用。
+  </div>
+</body>
+
+</html>
