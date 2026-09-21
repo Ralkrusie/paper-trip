@@ -1042,6 +1042,185 @@
         if (event.key === 'Escape') closeDayPicker();
     }
 
+    /* 选点确认：点地图后列出附近地址，用户选一个精确落点 */
+    var pointPickerEl = null;
+    var pointPickContext = null;
+    var pointPickToken = 0;
+
+    function openPointPicker(coords, context) {
+        closePointPicker();
+        pointPickContext = context || {};
+        var token = ++pointPickToken;
+        TripMap.previewLocation(coords.lng, coords.lat);
+        TripMap.nearbyPlaces(coords.lng, coords.lat).then(function (candidates) {
+            if (token !== pointPickToken) return;
+            if (!candidates || !candidates.length) {
+                applyPointPick(coords, null);
+                return;
+            }
+            showPointPicker(coords, candidates);
+        });
+    }
+
+    function showPointPicker(coords, candidates) {
+        var pop = document.createElement('div');
+        pop.className = 'day-picker point-picker';
+
+        var title = document.createElement('p');
+        title.className = 'day-picker-title';
+        title.textContent = '选择附近的地址：';
+        pop.appendChild(title);
+
+        candidates.forEach(function (candidate) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'day-picker-item point-item';
+
+            var nameEl = document.createElement('span');
+            nameEl.className = 'point-name';
+            nameEl.textContent = candidate.name;
+            button.appendChild(nameEl);
+
+            var subEl = document.createElement('span');
+            subEl.className = 'point-sub';
+            subEl.textContent = [candidate.tag, formatMeters(candidate.distance)].filter(Boolean).join(' · ');
+            button.appendChild(subEl);
+
+            button.addEventListener('click', function () {
+                closePointPicker();
+                applyPointPick(coords, candidate);
+            });
+            pop.appendChild(button);
+        });
+
+        var divider = document.createElement('div');
+        divider.className = 'point-divider';
+        pop.appendChild(divider);
+
+        var plainButton = document.createElement('button');
+        plainButton.type = 'button';
+        plainButton.className = 'day-picker-item point-item is-plain';
+        var plainName = document.createElement('span');
+        plainName.className = 'point-name';
+        plainName.textContent = '直接用点击的位置';
+        plainButton.appendChild(plainName);
+        var plainSub = document.createElement('span');
+        plainSub.className = 'point-sub';
+        plainSub.textContent = '不匹配附近地址';
+        plainButton.appendChild(plainSub);
+        plainButton.addEventListener('click', function () {
+            closePointPicker();
+            applyPointPick(coords, null);
+        });
+        pop.appendChild(plainButton);
+
+        document.body.appendChild(pop);
+        positionPointPicker(pop, coords);
+
+        pointPickerEl = pop;
+        // 等本次地图点击事件走完再监听外部点击，避免立即被关掉
+        window.setTimeout(function () {
+            if (!pointPickerEl) return;
+            document.addEventListener('click', onPointPickerOutside, true);
+            document.addEventListener('keydown', onPointPickerKey, true);
+        }, 0);
+    }
+
+    /** 浮层跟随点击位置（优先右下，越界翻向反侧） */
+    function positionPointPicker(pop, coords) {
+        var anchorX = isFinite(coords.clientX) ? coords.clientX : window.innerWidth / 2;
+        var anchorY = isFinite(coords.clientY) ? coords.clientY : window.innerHeight / 3;
+        var width = pop.offsetWidth;
+        var height = pop.offsetHeight;
+        var left = anchorX + 14;
+        var top = anchorY + 14;
+        if (left + width > window.innerWidth - 8) left = Math.max(8, anchorX - width - 14);
+        if (top + height > window.innerHeight - 8) top = Math.max(8, anchorY - height - 14);
+        pop.style.left = Math.round(left) + 'px';
+        pop.style.top = Math.round(top) + 'px';
+    }
+
+    function closePointPicker() {
+        pointPickToken++;
+        if (pointPickerEl && pointPickerEl.parentNode) pointPickerEl.parentNode.removeChild(pointPickerEl);
+        pointPickerEl = null;
+        document.removeEventListener('click', onPointPickerOutside, true);
+        document.removeEventListener('keydown', onPointPickerKey, true);
+    }
+
+    function cancelPointPick() {
+        closePointPicker();
+        pointPickContext = null;
+        TripMap.clearPreview();
+        toast('已取消选点');
+    }
+
+    function onPointPickerOutside(event) {
+        if (!pointPickerEl || pointPickerEl.contains(event.target)) return;
+        var mapBox = document.getElementById('amap-container');
+        if (mapBox && mapBox.contains(event.target)) {
+            // 又点了一次地图 = 重新选点，静默关闭，后续由新的选点流程接管
+            closePointPicker();
+            return;
+        }
+        cancelPointPick();
+    }
+
+    function onPointPickerKey(event) {
+        if (event.key === 'Escape') cancelPointPick();
+    }
+
+    /** 确认落点：candidate 为空表示直接使用点击坐标 */
+    function applyPointPick(rawCoords, candidate) {
+        var context = pointPickContext || {};
+        pointPickContext = null;
+        TripMap.clearPreview();
+
+        var lng = candidate ? candidate.lng : rawCoords.lng;
+        var lat = candidate ? candidate.lat : rawCoords.lat;
+        var editingId = context.keepEditingId || null;
+        var prefill = { lng: lng, lat: lat };
+        if (candidate && candidate.address) prefill.address = candidate.address;
+
+        if (!els.placeModal.open) openPlaceModal(editingId, prefill);
+
+        // 选点前填写过内容的话原样恢复，不覆盖用户输入
+        if (context.snapshot) {
+            els.placeName.value = context.snapshot.name;
+            els.placeAddress.value = context.snapshot.address;
+            els.placeNote.value = context.snapshot.note;
+            els.placeCategory.value = context.snapshot.categoryId;
+            els.placeAddDay.checked = context.snapshot.addDay;
+        }
+        // 新建地点：地点名预填所选地址的名称（可编辑）
+        if (candidate && !els.placeName.value) {
+            els.placeName.value = candidate.name;
+        }
+        els.placeLng.value = lng.toFixed(6);
+        els.placeLat.value = lat.toFixed(6);
+        if (!els.placeModal.open) els.placeModal.showModal();
+        // 编辑既有地点且地址为空时补齐（新建的由弹窗内部自动补全）
+        if (editingId && !els.placeAddress.value) {
+            if (candidate && candidate.address) {
+                els.placeAddress.value = candidate.address;
+            } else {
+                TripMap.reverseGeocode(lng, lat).then(function (address) {
+                    if (address && !els.placeAddress.value && els.placeModal.open) {
+                        els.placeAddress.value = address;
+                    }
+                });
+            }
+        }
+        toast(candidate ? '已匹配「' + candidate.name + '」' : '已使用点击的位置');
+    }
+
+    /** 距离文本：260 米 / 1.4 公里 */
+    function formatMeters(meters) {
+        if (!isFinite(meters) || meters < 0) return '';
+        if (meters < 1000) return Math.round(meters) + ' 米';
+        return (meters / 1000).toFixed(1) + ' 公里';
+    }
+
     function removePlaceWithConfirm(placeId) {
         var place = Store.getPlace(placeId);
         if (!place) return;
@@ -1413,40 +1592,19 @@
             addDay: els.placeAddDay.checked
         } : null;
         if (els.placeModal.open) els.placeModal.close();
-        toast('请在地图上点击目标位置');
+        toast('请在地图上点击目标位置，点完可选附近地址');
     }
 
-    /** 地图点击（由 main.js 转发） */
+    /** 地图点击（由 main.js 转发）：先弹附近地址供选择，再进入编辑弹窗 */
     function handleMapClick(coords) {
-        if (pickMode) {
-            pickMode = false;
-            var keepEditing = !pickNewOnly && editingPlaceId;
-            if (!els.placeModal.open) {
-                openPlaceModal(keepEditing ? editingPlaceId : null, coords);
-            }
-            if (pickHadOpenModal && pickSnapshot) {
-                els.placeName.value = pickSnapshot.name;
-                els.placeAddress.value = pickSnapshot.address;
-                els.placeNote.value = pickSnapshot.note;
-                els.placeCategory.value = pickSnapshot.categoryId;
-                els.placeAddDay.checked = pickSnapshot.addDay;
-            }
-            els.placeLng.value = coords.lng.toFixed(6);
-            els.placeLat.value = coords.lat.toFixed(6);
-            if (!els.placeModal.open) els.placeModal.showModal();
-            if (!els.placeAddress.value) {
-                TripMap.reverseGeocode(coords.lng, coords.lat).then(function (address) {
-                    if (address && !els.placeAddress.value && els.placeModal.open) {
-                        els.placeAddress.value = address;
-                    }
-                });
-            }
-            pickSnapshot = null;
-            pickHadOpenModal = false;
-            toast('坐标已更新');
-            return;
-        }
-        openPlaceModal(null, coords);
+        var context = {
+            keepEditingId: pickMode && !pickNewOnly ? editingPlaceId : null,
+            snapshot: pickMode && pickHadOpenModal ? pickSnapshot : null
+        };
+        pickMode = false;
+        pickSnapshot = null;
+        pickHadOpenModal = false;
+        openPointPicker(coords, context);
     }
 
     /** 标记点击（由 main.js 转发） */

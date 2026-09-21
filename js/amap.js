@@ -37,6 +37,7 @@
     var focusFrame = null;
     var focusResolve = null;
     var geocoder = null;
+    var geocoderFull = null;   // extensions: 'all'，选点时取周边 POI
     var placeSearch = null;
 
     function prefersReduced() {
@@ -64,6 +65,28 @@
             script.onerror = function () { reject(new Error('高德地图 API 加载失败')); };
             document.head.appendChild(script);
         });
+    }
+
+    /** 地图点击转发：带上容器内屏幕坐标，供选点浮层定位 */
+    function emitMapClick(event) {
+        if (!callbacks.onMapClick || !event || !event.lnglat) return;
+        var coords = {
+            lng: event.lnglat.getLng(),
+            lat: event.lnglat.getLat()
+        };
+        if (event.originEvent && isFinite(event.originEvent.clientX)) {
+            coords.clientX = event.originEvent.clientX;
+            coords.clientY = event.originEvent.clientY;
+        } else if (event.pixel && map && map.getContainer) {
+            var pixelX = typeof event.pixel.getX === 'function' ? event.pixel.getX() : event.pixel.x;
+            var pixelY = typeof event.pixel.getY === 'function' ? event.pixel.getY() : event.pixel.y;
+            if (isFinite(pixelX) && isFinite(pixelY)) {
+                var rect = map.getContainer().getBoundingClientRect();
+                coords.clientX = rect.left + pixelX;
+                coords.clientY = rect.top + pixelY;
+            }
+        }
+        callbacks.onMapClick(coords);
     }
 
     /** 初始化地图。options: { containerId, center, zoom, mapStyle, viewMode, onMapClick, onMarkerClick, onViewChange } */
@@ -104,11 +127,7 @@
                     applyStyleMode('satellite');
                 }
 
-                map.on('click', function (event) {
-                    if (callbacks.onMapClick && event && event.lnglat) {
-                        callbacks.onMapClick({ lng: event.lnglat.getLng(), lat: event.lnglat.getLat() });
-                    }
-                });
+                map.on('click', emitMapClick);
 
                 var viewTimer = null;
                 map.on('moveend', function () {
@@ -615,11 +634,7 @@
 
         if (viewMode === '3D') map.setPitch(50);
 
-        map.on('click', function (event) {
-            if (callbacks.onMapClick && event && event.lnglat) {
-                callbacks.onMapClick({ lng: event.lnglat.getLng(), lat: event.lnglat.getLat() });
-            }
-        });
+        map.on('click', emitMapClick);
 
         var viewTimer = null;
         map.on('moveend', function () {
@@ -779,6 +794,109 @@
         });
     }
 
+    /**
+     * 附近地址候选（地图选点用）：给定坐标，返回由近及远的
+     * 门牌号 / 周边 POI / 道路，最多 6 条。
+     */
+    function nearbyPlaces(lng, lat) {
+        return new Promise(function (resolve) {
+            if (!window.AMap || !window.AMap.plugin) {
+                resolve([]);
+                return;
+            }
+            var settled = false;
+            var timer = window.setTimeout(function () {
+                if (!settled) { settled = true; resolve([]); }
+            }, 7000);
+
+            window.AMap.plugin(['AMap.Geocoder'], function () {
+                try {
+                    if (!geocoderFull) geocoderFull = new window.AMap.Geocoder({ extensions: 'all' });
+                    geocoderFull.getAddress([lng, lat], function (status, result) {
+                        if (settled) return;
+                        settled = true;
+                        window.clearTimeout(timer);
+                        if (status === 'complete' && result && result.regeocode) {
+                            resolve(buildNearbyCandidates(result.regeocode, lng, lat));
+                        } else {
+                            resolve([]);
+                        }
+                    });
+                } catch (error) {
+                    if (!settled) {
+                        settled = true;
+                        window.clearTimeout(timer);
+                        resolve([]);
+                    }
+                }
+            });
+        });
+    }
+
+    /** 把逆地理结果整理成候选列表（按距离升序，去重取前 6） */
+    function buildNearbyCandidates(regeo, clickLng, clickLat) {
+        var list = [];
+        var seen = {};
+        var component = regeo.addressComponent || {};
+
+        function push(name, address, tag, location) {
+            if (!name || seen[name]) return;
+            var coords = locationToLngLat(location);
+            if (!coords) return;
+            seen[name] = true;
+            list.push({
+                name: name,
+                address: address || '',
+                tag: tag || '',
+                lng: coords[0],
+                lat: coords[1],
+                distance: metersBetween(clickLng, clickLat, coords[0], coords[1])
+            });
+        }
+
+        var streetNumber = component.streetNumber || {};
+        if (streetNumber.street) {
+            var numberText = streetNumber.street + (streetNumber.number || '');
+            push(numberText, regeo.formattedAddress || numberText, '门牌号', streetNumber.location);
+        }
+
+        (regeo.pois || []).forEach(function (poi) {
+            var tag = String(poi.type || '').split(';').filter(Boolean).pop() || '';
+            push(poi.name, poi.address || '', tag, poi.location);
+        });
+
+        (regeo.roads || []).forEach(function (road) {
+            push(road.name, regeo.formattedAddress || '', '道路', road.location);
+        });
+
+        list.sort(function (a, b) { return a.distance - b.distance; });
+        return list.slice(0, 6);
+    }
+
+    /** 兼容 LngLat / 字面量 / 数组多种坐标写法 */
+    function locationToLngLat(location) {
+        if (!location) return null;
+        if (typeof location.getLng === 'function') return [location.getLng(), location.getLat()];
+        if (typeof location.lng === 'number' && typeof location.lat === 'number') return [location.lng, location.lat];
+        if (Object.prototype.toString.call(location) === '[object Array]' && location.length === 2) {
+            var lng = Number(location[0]);
+            var lat = Number(location[1]);
+            return isFinite(lng) && isFinite(lat) ? [lng, lat] : null;
+        }
+        return null;
+    }
+
+    /** 两点间球面距离（米） */
+    function metersBetween(lng1, lat1, lng2, lat2) {
+        var radius = 6371000;
+        var toRad = Math.PI / 180;
+        var dLat = (lat2 - lat1) * toRad;
+        var dLng = (lng2 - lng1) * toRad;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+            + Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return 2 * radius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
     function searchPOI(keyword) {
         return new Promise(function (resolve, reject) {
             if (!window.AMap || !window.AMap.plugin) {
@@ -847,6 +965,7 @@
         getViewMode: getViewMode,
         reverseGeocode: reverseGeocode,
         geocodeAddress: geocodeAddress,
+        nearbyPlaces: nearbyPlaces,
         searchPOI: searchPOI,
         flyTo: flyTo,
         previewLocation: previewLocation,

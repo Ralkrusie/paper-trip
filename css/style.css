@@ -726,6 +726,37 @@ img {
   font-weight: 600;
 }
 
+/* 选点确认浮层（点地图后列出附近地址） */
+.point-picker {
+  min-width: 232px;
+  max-width: 300px;
+}
+
+.point-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.point-name {
+  line-height: 1.4;
+}
+
+.point-sub {
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+
+.point-item.is-plain .point-name {
+  color: var(--ink-muted);
+}
+
+.point-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--line);
+}
+
 /* ---------- 空状态 ---------- */
 .empty-tip {
   padding: 26px 18px;
