@@ -1037,7 +1037,7 @@ img {
   transition: opacity 160ms var(--ease-out), transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
 }
 
-.trip-marker:hover:not(.is-active):not(.is-preview) {
+.trip-marker:hover:not(.is-preview) {
   opacity: 0.32;
 }
 
@@ -1055,14 +1055,15 @@ img {
   font-size: 0;
 }
 
-.trip-marker.is-dot:hover:not(.is-active) {
-  opacity: 0.32;
-}
-
 .trip-marker.is-dot.is-active {
   background: var(--cinnabar);
   transform: scale(1.35);
   opacity: 1;
+}
+
+/* 悬停规则放在选中规则之后，保证选中的小圆点悬停也能变透明 */
+.trip-marker.is-dot:hover {
+  opacity: 0.32;
 }
 
 /* 路线上的流动箭头（全程单点，指向行进方向） */
