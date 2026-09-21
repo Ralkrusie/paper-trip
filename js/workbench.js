@@ -714,23 +714,24 @@
         TripMap.render(model);
     }
 
-    /** 全程统一编号：按「天序 → 天内序」给每个地点分配连续编号（1、2、3…，跨天不重置） */
+    /** 全程统一编号：按「天序 → 天内序」给每个地点分配连续字母（A、B、…、Z；超过 26 个后用 27、28…），跨天不重置 */
     function buildStopLabels() {
         var labels = {};
-        var number = 0;
+        var count = 0;
         Store.state.days.forEach(function (day) {
             day.items.forEach(function (item) {
                 if (item.disabled || labels[item.placeId]) return;
                 if (!Store.getPlace(item.placeId)) return;
-                labels[item.placeId] = String(++number);
+                labels[item.placeId] = count < 26 ? String.fromCharCode(65 + count) : String(count + 1);
+                count++;
             });
         });
         return labels;
     }
 
-    /** 编号展示文本：1 →「第 1 站」 */
+    /** 编号展示文本：A →「A 站」；27 →「第 27 站」 */
     function stopLabelText(label) {
-        return '第 ' + label + ' 站';
+        return /^[0-9]+$/.test(label) ? '第 ' + label + ' 站' : label + ' 站';
     }
 
     function buildMapModel() {
