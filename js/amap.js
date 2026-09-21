@@ -804,13 +804,15 @@
                         window.clearTimeout(timer);
                         if (status === 'complete' && result && result.poiList && result.poiList.pois) {
                             var results = result.poiList.pois.map(function (poi) {
+                                var typeParts = poi.type ? poi.type.split(';').filter(Boolean) : [];
                                 return {
                                     name: poi.name || '',
                                     address: poi.address || poi.pname && poi.cityname
                                         ? [poi.pname, poi.cityname, poi.adname, poi.address].filter(Boolean).join(' ')
                                         : (poi.address || ''),
                                     lng: poi.location ? poi.location.lng : null,
-                                    lat: poi.location ? poi.location.lat : null
+                                    lat: poi.location ? poi.location.lat : null,
+                                    type: typeParts.length ? typeParts[typeParts.length - 1] : ''
                                 };
                             }).filter(function (poi) { return poi.name && poi.lng !== null; });
                             resolve(sortByMapCenter(results));

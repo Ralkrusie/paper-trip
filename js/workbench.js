@@ -663,7 +663,11 @@
             if (usage.length) {
                 var usageWrap = document.createElement('span');
                 usageWrap.className = 'place-usage';
+                // 同一天多次出现只显示一次
+                var seenDays = {};
                 usage.forEach(function (entry) {
+                    if (seenDays[entry.dayId]) return;
+                    seenDays[entry.dayId] = true;
                     var tag = document.createElement('span');
                     tag.className = 'usage-tag';
                     tag.textContent = entry.dayName;
@@ -677,7 +681,14 @@
 
             var actions = document.createElement('div');
             actions.className = 'place-actions';
-            actions.appendChild(iconButton('add', '＋', '加入当前天'));
+            var addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'icon-btn icon-btn-add';
+            addButton.dataset.action = 'add';
+            addButton.title = '加入行程的某一天';
+            addButton.setAttribute('aria-label', '把「' + place.name + '」加入行程的某一天');
+            addButton.textContent = '＋';
+            actions.appendChild(addButton);
             actions.appendChild(iconButton('edit', ICON_PENCIL, '编辑地点'));
             actions.appendChild(iconButton('remove', ICON_X, '删除地点'));
 
@@ -939,7 +950,7 @@
 
         if (actionButton) {
             var action = actionButton.dataset.action;
-            if (action === 'add') addToActiveDay(placeId);
+            if (action === 'add') openDayPicker(placeId, actionButton);
             else if (action === 'edit') openPlaceModal(placeId);
             else if (action === 'remove') removePlaceWithConfirm(placeId);
             return;
@@ -948,17 +959,79 @@
         selectPlace(placeId, { focus: true });
     }
 
-    function addToActiveDay(placeId) {
-        var day = Store.getDay(activeDayId);
+    function addToDay(placeId, dayId) {
+        var day = Store.getDay(dayId);
         var place = Store.getPlace(placeId);
         if (!day || !place) return;
         var existing = day.items.find(function (it) { return it.placeId === placeId; });
-        Store.addItem(activeDayId, placeId);
+        Store.addItem(dayId, placeId);
         toast(existing
             ? '「' + place.name + '」已在 ' + dayTabLabel(day) + ' 中，再次加入'
             : '已把「' + place.name + '」加入 ' + dayTabLabel(day));
         selectPlace(placeId, { focus: false });
         scrollCardIntoView(placeId);
+    }
+
+    /* 加入行程：点 ＋ 弹出“选哪一天”浮层 */
+    var dayPickerEl = null;
+
+    function openDayPicker(placeId, anchor) {
+        closeDayPicker();
+        var place = Store.getPlace(placeId);
+        if (!place || !anchor) return;
+
+        var pop = document.createElement('div');
+        pop.className = 'day-picker';
+        var title = document.createElement('p');
+        title.className = 'day-picker-title';
+        title.textContent = '加入行程：';
+        pop.appendChild(title);
+
+        Store.state.days.forEach(function (day) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'day-picker-item' + (day.id === activeDayId ? ' is-current' : '');
+            button.textContent = dayTabLabel(day) + (day.id === activeDayId ? '（当前）' : '');
+            button.addEventListener('click', function () {
+                closeDayPicker();
+                addToDay(placeId, day.id);
+            });
+            pop.appendChild(button);
+        });
+
+        document.body.appendChild(pop);
+        var rect = anchor.getBoundingClientRect();
+        var popRect = pop.getBoundingClientRect();
+        var top = rect.bottom + 6;
+        if (top + popRect.height > window.innerHeight - 8) {
+            top = Math.max(8, rect.top - popRect.height - 6);
+        }
+        var left = Math.max(8, Math.min(rect.left, window.innerWidth - popRect.width - 8));
+        pop.style.top = Math.round(top) + 'px';
+        pop.style.left = Math.round(left) + 'px';
+
+        dayPickerEl = pop;
+        // 等本次点击事件走完再监听外部点击，避免立即被关掉
+        window.setTimeout(function () {
+            if (!dayPickerEl) return;
+            document.addEventListener('click', onDayPickerOutside, true);
+            document.addEventListener('keydown', onDayPickerKey, true);
+        }, 0);
+    }
+
+    function closeDayPicker() {
+        if (dayPickerEl && dayPickerEl.parentNode) dayPickerEl.parentNode.removeChild(dayPickerEl);
+        dayPickerEl = null;
+        document.removeEventListener('click', onDayPickerOutside, true);
+        document.removeEventListener('keydown', onDayPickerKey, true);
+    }
+
+    function onDayPickerOutside(event) {
+        if (dayPickerEl && !dayPickerEl.contains(event.target)) closeDayPicker();
+    }
+
+    function onDayPickerKey(event) {
+        if (event.key === 'Escape') closeDayPicker();
     }
 
     function removePlaceWithConfirm(placeId) {
@@ -1406,7 +1479,8 @@
                     lng: poi.lng,
                     lat: poi.lat,
                     kind: 'poi',
-                    level: ''
+                    level: '',
+                    type: poi.type || ''
                 });
             });
 
@@ -1460,7 +1534,7 @@
 
             var name = document.createElement('strong');
             name.textContent = result.name;
-            var tagText = result.kind === 'address' ? (result.level || '地址') : '地点';
+            var tagText = result.kind === 'address' ? (result.level || '地址') : (result.type || '地点');
             var tag = document.createElement('em');
             tag.className = 'map-result-level';
             tag.textContent = tagText;
@@ -1476,8 +1550,8 @@
             var addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'map-result-add';
-            addButton.title = '加入当前天';
-            addButton.setAttribute('aria-label', '把「' + result.name + '」加入当前天');
+            addButton.title = '加入地点库';
+            addButton.setAttribute('aria-label', '把「' + result.name + '」加入地点库');
             addButton.textContent = '＋';
             addButton.addEventListener('click', function () { addSearchResult(result); });
 
@@ -1502,26 +1576,27 @@
     }
 
     function addSearchResult(result) {
-        var day = Store.getDay(activeDayId);
-        if (!day) return;
-
+        // 只存入地点库；是否加入行程、加入哪一天，由地点库里的 ＋ 决定
         // 附近已有地点（约 40m 内）则复用，避免建重复点
         var place = Store.state.places.find(function (existing) {
             return Math.abs(existing.lng - result.lng) < 0.0004 && Math.abs(existing.lat - result.lat) < 0.0004;
         });
-        if (!place) {
-            place = Store.addPlace({
-                name: result.name,
-                lng: result.lng,
-                lat: result.lat,
-                categoryId: guessCategory(result),
-                address: result.address || ''
-            });
+        if (place) {
+            TripMap.clearPreview();
+            toast('「' + place.name + '」已在地点库');
+            selectPlace(place.id, { focus: false });
+            return;
         }
-        Store.addItem(activeDayId, place.id);
+        place = Store.addPlace({
+            name: result.name,
+            lng: result.lng,
+            lat: result.lat,
+            categoryId: guessCategory(result),
+            address: result.address || ''
+        });
         TripMap.clearPreview();
-        toast('已把「' + place.name + '」加入 ' + dayTabLabel(day));
-        selectPlace(place.id, { focus: true });
+        toast('已把「' + place.name + '」存入地点库，可在「地点库」加入行程');
+        selectPlace(place.id, { focus: false });
     }
 
     /** 根据名称/地址猜一个分类，减少手工调整 */

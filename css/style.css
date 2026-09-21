@@ -672,6 +672,64 @@ img {
   gap: 2px;
 }
 
+/* 地点库：加入行程（大号加号） */
+.icon-btn-add {
+  width: 30px;
+  height: 30px;
+  color: var(--cinnabar);
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.icon-btn-add:hover {
+  background: rgba(163, 58, 49, 0.1);
+  color: var(--cinnabar-dark);
+}
+
+/* 天选择浮层（点 ＋ 弹出） */
+.day-picker {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper-bright);
+  box-shadow: 0 10px 28px rgba(23, 33, 31, 0.22);
+}
+
+.day-picker-title {
+  margin: 0 2px 4px;
+  color: var(--ink-muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.day-picker-item {
+  padding: 7px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.day-picker-item:hover {
+  background: rgba(120, 149, 139, 0.14);
+}
+
+.day-picker-item.is-current {
+  color: var(--cinnabar-dark);
+  font-weight: 600;
+}
+
 /* ---------- 空状态 ---------- */
 .empty-tip {
   padding: 26px 18px;
