@@ -988,10 +988,18 @@
         pop.appendChild(title);
 
         Store.state.days.forEach(function (day) {
+            // 该天已包含此地点几次（与地点库使用标签口径一致，含已移除项）
+            var count = day.items.filter(function (item) { return item.placeId === placeId; }).length;
             var button = document.createElement('button');
             button.type = 'button';
-            button.className = 'day-picker-item' + (day.id === activeDayId ? ' is-current' : '');
-            button.textContent = dayTabLabel(day) + (day.id === activeDayId ? '（当前）' : '');
+            button.className = 'day-picker-item';
+            button.textContent = dayTabLabel(day);
+            if (count > 0) {
+                var mark = document.createElement('span');
+                mark.className = 'day-picker-mark';
+                mark.textContent = count > 1 ? '√（' + count + '）' : '√';
+                button.appendChild(mark);
+            }
             button.addEventListener('click', function () {
                 closeDayPicker();
                 addToDay(placeId, day.id);

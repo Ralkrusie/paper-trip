@@ -670,20 +670,14 @@ img {
 .place-actions {
   display: flex;
   gap: 2px;
+  align-items: center;
 }
 
-/* 地点库：加入行程（大号加号） */
+/* 地点库：加入行程（加号略大，颜色随图标） */
 .icon-btn-add {
   width: 30px;
   height: 30px;
-  color: var(--cinnabar);
   font-size: 19px;
-  font-weight: 700;
-}
-
-.icon-btn-add:hover {
-  background: rgba(163, 58, 49, 0.1);
-  color: var(--cinnabar-dark);
 }
 
 /* 天选择浮层（点 ＋ 弹出） */
@@ -725,8 +719,10 @@ img {
   background: rgba(120, 149, 139, 0.14);
 }
 
-.day-picker-item.is-current {
-  color: var(--cinnabar-dark);
+/* 已在当天时显示的 √（多次时带次数） */
+.day-picker-mark {
+  margin-left: 6px;
+  color: var(--cinnabar);
   font-weight: 600;
 }
 
