@@ -840,6 +840,10 @@ img {
   font-size: 12px;
 }
 
+.ghost-btn svg {
+  display: block;
+}
+
 .ghost-btn.accent {
   border-color: var(--cinnabar);
   color: var(--cinnabar-dark);

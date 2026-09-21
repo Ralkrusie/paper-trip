@@ -192,6 +192,7 @@
         });
 
         // 天操作
+        els.dayEditBtn.innerHTML = ICON_PENCIL;
         els.dayEditBtn.addEventListener('click', openDayModal);
         els.fitDayBtn.addEventListener('click', fitActiveDay);
         els.playDayBtn.addEventListener('click', togglePlayback);
@@ -255,6 +256,7 @@
         els.helpItineraryBtn.addEventListener('click', exportItineraryHTML);
 
         // 行程信息
+        els.tripEditBtn.innerHTML = ICON_PENCIL;
         els.tripEditBtn.addEventListener('click', openTripModal);
         els.tripForm.addEventListener('submit', onTripSubmit);
 
