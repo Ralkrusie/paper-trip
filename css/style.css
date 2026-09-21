@@ -1090,8 +1090,10 @@ img {
 }
 
 /* ---------- 对话框 ---------- */
+/* margin: auto 覆盖全局 * 重置，恢复原生居中（否则弹窗全部贴在左上角） */
 dialog.app-modal,
 dialog.stats-modal {
+  margin: auto;
   border: none;
   padding: 0;
   background: transparent;
