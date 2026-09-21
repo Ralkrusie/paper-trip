@@ -1,5 +1,5 @@
 /**
- * Paper Trip · 数据层
+ * 拾途 Paper Trip · 数据层
  * 管理地点库、多日行程与本地持久化（localStorage），并提供导入导出。
  * 数据结构：
  *   state = {

@@ -1,6 +1,6 @@
-# Paper Trip · 轻量行程规划
+# 拾途 Paper Trip · 轻量行程规划
 
-> Paper Trip — a zero-build, pure front-end trip planner built on AMap.
+> 拾途 Paper Trip — 沿途拾景，落纸成行。A zero-build, pure front-end trip planner built on AMap.
 
 一个**零部署、纯前端**的个人行程规划工具：在高德地图上收集地点、编排多日行程、画路线、做统计。
 数据保存在浏览器本地（localStorage），导出一个 JSON 就是完整备份。

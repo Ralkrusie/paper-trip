@@ -1,5 +1,5 @@
 /**
- * Paper Trip · 工作台交互
+ * 拾途 Paper Trip · 工作台交互
  * 负责：面板渲染（行程 / 地点库）、拖拽编排、编辑弹窗、地图联动、
  *       按序浏览、导入导出、Toast 提示。
  */
@@ -1946,9 +1946,9 @@
             '<title>行程单 · ' + escapeHtml(title) + '</title>\n' +
             '<style>' + ITINERARY_STYLES + '</style>\n</head>\n<body>\n' +
             '<main class="sheet">' +
-            '<header class="sheet-head"><div class="seal">行</div>' +
+            '<header class="sheet-head"><div class="seal">拾</div>' +
             '<div><h1>' + escapeHtml(title) + '</h1>' +
-            '<p class="brand">Paper Trip · 轻量行程规划</p></div></header>' +
+            '<p class="brand">拾途 Paper Trip · 轻量行程规划</p></div></header>' +
             (note ? '<section class="trip-note"><h2>行程须知</h2><p>' + escapeHtmlMultiline(note) + '</p></section>' : '') +
             dayBlocks +
             '<footer class="sheet-foot">导出于 ' + generatedText + ' · 可离线打开 · 导航链接需手机联网唤起高德</footer>' +
