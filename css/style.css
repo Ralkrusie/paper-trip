@@ -157,11 +157,25 @@ img {
   outline: none;
 }
 
-.brand-sub {
-  padding-left: 4px;
+.brand-name {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  padding: 0 4px;
+}
+
+.brand-cn {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.brand-en,
+.brand-dash {
   color: var(--ink-muted);
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
 }
 
 .side-tabs {
@@ -1204,21 +1218,6 @@ dialog.stats-modal::backdrop {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-}
-
-.field-inline {
-  flex-direction: row;
-  gap: 8px;
-  align-items: center;
-  align-self: end;
-  padding: 8px 2px;
-  font-size: 13px;
-  color: var(--ink-soft);
-}
-
-.field-inline input {
-  width: auto;
-  accent-color: var(--cinnabar);
 }
 
 .modal-inline-actions {

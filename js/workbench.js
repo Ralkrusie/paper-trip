@@ -80,8 +80,6 @@
             placeModalTitle: $('place-modal-title'),
             placeName: $('place-name'),
             placeCategory: $('place-category'),
-            placeAddDay: $('place-add-day'),
-            placeAddDayLabel: $('place-add-day-label'),
             placeLng: $('place-lng'),
             placeLat: $('place-lat'),
             placeAddress: $('place-address'),
@@ -1190,7 +1188,6 @@
             els.placeAddress.value = context.snapshot.address;
             els.placeNote.value = context.snapshot.note;
             els.placeCategory.value = context.snapshot.categoryId;
-            els.placeAddDay.checked = context.snapshot.addDay;
         }
         // 新建地点：地点名预填所选地址的名称（可编辑）
         if (candidate && !els.placeName.value) {
@@ -1486,11 +1483,6 @@
         els.placeAddress.value = place ? place.address : (prefill.address || '');
         els.placeNote.value = place ? place.note : '';
 
-        els.placeAddDay.hidden = Boolean(place);
-        els.placeAddDayLabel.hidden = Boolean(place);
-        var day = Store.getDay(activeDayId);
-        els.placeAddDayLabel.textContent = '保存后加入 ' + (day ? day.name : '当前天');
-
         els.poiKeyword.value = '';
         els.poiResults.hidden = true;
         els.poiResults.innerHTML = '';
@@ -1547,13 +1539,7 @@
             toast('已保存「' + data.name + '」');
         } else {
             place = Store.addPlace(data);
-            if (els.placeAddDay.checked) {
-                var day = Store.getDay(activeDayId);
-                Store.addItem(activeDayId, place.id);
-                toast('已创建并加入 ' + (day ? day.name : '当前天'));
-            } else {
-                toast('已创建，可在地点库中加入行程');
-            }
+            toast('已创建「' + data.name + '」，可在「地点库」加入行程');
         }
 
         els.placeModal.close();
@@ -1588,8 +1574,7 @@
             name: els.placeName.value,
             address: els.placeAddress.value,
             note: els.placeNote.value,
-            categoryId: els.placeCategory.value,
-            addDay: els.placeAddDay.checked
+            categoryId: els.placeCategory.value
         } : null;
         if (els.placeModal.open) els.placeModal.close();
         toast('请在地图上点击目标位置，点完可选附近地址');
