@@ -389,9 +389,10 @@
         if (!day) return;
 
         var timeline = Store.computeTimeline(day);
+        var labels = buildStopLabels();
 
         timeline.forEach(function (entry, index) {
-            renderActiveCard(entry, index);
+            renderActiveCard(entry, index, labels);
             if (index < timeline.length - 1) {
                 renderConnector(entry, timeline[index + 1]);
             }
@@ -454,7 +455,7 @@
         }
     }
 
-    function renderActiveCard(entry, index) {
+    function renderActiveCard(entry, index, labels) {
         var item = entry.item;
         var place = entry.place;
         if (!place) return;
@@ -472,7 +473,7 @@
         var badge = document.createElement('span');
         badge.className = 'item-badge';
         badge.style.setProperty('--item-color', category ? category.color : '#52655e');
-        badge.textContent = String(index + 1);
+        badge.textContent = (labels && labels[place.id]) || String(index + 1);
 
         var main = document.createElement('div');
         main.className = 'item-main';
@@ -713,63 +714,98 @@
         TripMap.render(model);
     }
 
-    function buildMapModel() {
-        var planned = {};
-        Store.state.days.forEach(function (day, dayIndex) {
-            day.items.filter(function (item) { return !item.disabled; }).forEach(function (item, order) {
-                if (!planned[item.placeId]) {
-                    planned[item.placeId] = { dayId: day.id, dayIndex: dayIndex, order: order + 1 };
+    /** 全程统一编号：按「天序 → 天内序」给每个地点分配编号；交通 / 住宿用 A、B、C…，其余用 1、2、3… */
+    function buildStopLabels() {
+        var labels = {};
+        var number = 0;
+        var letter = 0;
+        Store.state.days.forEach(function (day) {
+            day.items.forEach(function (item) {
+                if (item.disabled || labels[item.placeId]) return;
+                var place = Store.getPlace(item.placeId);
+                if (!place) return;
+                if (place.categoryId === 'transport' || place.categoryId === 'hotel') {
+                    labels[item.placeId] = letterLabel(letter++);
+                } else {
+                    labels[item.placeId] = String(++number);
                 }
             });
         });
+        return labels;
+    }
+
+    /** 字母序号：0→A、25→Z、26→AA… */
+    function letterLabel(index) {
+        var text = '';
+        var n = index + 1;
+        while (n > 0) {
+            var remainder = (n - 1) % 26;
+            text = String.fromCharCode(65 + remainder) + text;
+            n = Math.floor((n - 1) / 26);
+        }
+        return text;
+    }
+
+    /** 编号展示文本：1 →「第 1 站」；A →「A 站」 */
+    function stopLabelText(label) {
+        return /^[0-9]+$/.test(label) ? '第 ' + label + ' 站' : label + ' 站';
+    }
+
+    function buildMapModel() {
+        // 全程统一编号（1、2、3… / 交通住宿 A、B、C…）
+        var labels = buildStopLabels();
 
         var points = Store.state.places.map(function (place) {
-            var plan = planned[place.id];
+            var label = labels[place.id] || null;
             var category = Store.getCategory(place.categoryId);
             return {
                 placeId: place.id,
                 name: place.name,
                 lng: place.lng,
                 lat: place.lat,
-                isPlanned: Boolean(plan),
-                order: plan ? plan.order : null,
+                isPlanned: Boolean(label),
+                label: label,
+                labelText: label ? stopLabelText(label) : '',
                 color: category ? category.color : '#52655e',
                 active: place.id === activePlaceId
             };
         });
 
-        // 逐段生成连线：颜色随「这段路在整段行程里要走的次数」加深；
-        // 同一对地点（如酒店 ↔ 歌剧院往返）只画一条，避免两条虚线相位交错叠成“实线”
-        var lines = [];
-        var flowPath = [];
-        var drawnPairs = {};
+        // 全程一条线：各天行程首尾相接（跨天也相连），颜色随「这段路要走的次数」加深；
+        // 同一对地点（如酒店 ↔ 歌剧院往返）只画一条，避免虚线相位交错叠成“实线”
+        var stops = [];
         Store.state.days.forEach(function (day) {
-            var stops = day.items
+            day.items
                 .filter(function (item) { return !item.disabled; })
-                .map(function (item) { return Store.getPlace(item.placeId); })
-                .filter(Boolean);
-
-            // 站点顺序（供流动箭头使用，保留往返完整路径）
-            stops.forEach(function (place) {
-                var last = flowPath[flowPath.length - 1];
-                if (!last || Math.abs(last[0] - place.lng) > 1e-6 || Math.abs(last[1] - place.lat) > 1e-6) {
-                    flowPath.push([place.lng, place.lat]);
-                }
-            });
-
-            for (var i = 1; i < stops.length; i++) {
-                var from = stops[i - 1];
-                var to = stops[i];
-                if (from.id === to.id) continue;
-                var pairKey = from.id < to.id ? from.id + '|' + to.id : to.id + '|' + from.id;
-                if (drawnPairs[pairKey]) continue;
-                drawnPairs[pairKey] = true;
-                lines.push({
-                    color: legTravelColor(countLegTrips(from.id, to.id)),
-                    path: [[from.lng, from.lat], [to.lng, to.lat]]
+                .forEach(function (item) {
+                    var place = Store.getPlace(item.placeId);
+                    if (place) stops.push(place);
                 });
+        });
+
+        // 站点顺序（供流动箭头使用，保留往返完整路径）
+        var flowPath = [];
+        stops.forEach(function (place) {
+            var last = flowPath[flowPath.length - 1];
+            if (!last || Math.abs(last[0] - place.lng) > 1e-6 || Math.abs(last[1] - place.lat) > 1e-6) {
+                flowPath.push([place.lng, place.lat]);
             }
         });
+
+        var lines = [];
+        var drawnPairs = {};
+        for (var i = 1; i < stops.length; i++) {
+            var from = stops[i - 1];
+            var to = stops[i];
+            if (from.id === to.id) continue;
+            var pairKey = from.id < to.id ? from.id + '|' + to.id : to.id + '|' + from.id;
+            if (drawnPairs[pairKey]) continue;
+            drawnPairs[pairKey] = true;
+            lines.push({
+                color: legTravelColor(countLegTrips(from.id, to.id)),
+                path: [[from.lng, from.lat], [to.lng, to.lat]]
+            });
+        }
 
         return { points: points, lines: lines, flowPath: flowPath };
     }
@@ -855,9 +891,8 @@
 
         var usages = Store.placeUsage(placeId);
         if (usages.length) {
-            var day = Store.getDay(usages[0].dayId);
-            var order = day ? day.items.findIndex(function (it) { return it.id === usages[0].itemId; }) + 1 : 0;
-            updateStatus(usages[0].dayName + ' · 第 ' + (order || 1) + ' 站：' + place.name);
+            var label = buildStopLabels()[placeId];
+            updateStatus(usages[0].dayName + ' · ' + (label ? stopLabelText(label) : '已移除') + '：' + place.name);
         } else {
             updateStatus('未安排：' + place.name + '（在地点库点 ＋ 加入某一天）');
         }

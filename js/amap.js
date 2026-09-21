@@ -320,12 +320,12 @@
         element.title = point.name + (point.isPlanned ? '' : '（未安排）');
         element.setAttribute(
             'aria-label',
-            (point.isPlanned ? '第 ' + point.order + ' 站：' : '未安排地点：') + point.name
+            (point.isPlanned ? point.labelText + '：' : '未安排地点：') + point.name
         );
         // 颜色统一由分类（POI 类型）决定：已安排点为分类色，未安排小圆点同色系
         element.style.setProperty('--marker-color', point.color || '#52655e');
         if (point.isPlanned) {
-            element.textContent = String(point.order);
+            element.textContent = point.label;
         }
 
         function activate() {
