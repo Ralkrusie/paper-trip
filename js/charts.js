@@ -6,7 +6,7 @@
     'use strict';
 
     var instances = [];
-    var PALETTE = ['#b1483d', '#4e85c6', '#5a9e6b', '#e8a640', '#8b5ea8', '#d47a4e', '#5b8c8c', '#c4854a'];
+    var PALETTE = ['#2fa898', '#e8833a', '#be4a2d', '#3f7e93', '#7fa86b', '#c99a3a', '#5f9ea0', '#b58a6a'];
 
     function disposeCharts() {
         instances.forEach(function (chart) {

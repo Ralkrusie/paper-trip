@@ -179,7 +179,7 @@
             var polyline = new window.AMap.Polyline({
                 path: line.path,
                 zIndex: 40,
-                strokeColor: line.color || '#f261a8',
+                strokeColor: line.color || '#ef8a22',
                 strokeOpacity: 0.88,
                 strokeWeight: 4,
                 strokeStyle: 'dashed',
@@ -323,7 +323,7 @@
             (point.isPlanned ? point.labelText + '：' : '未安排地点：') + point.name
         );
         // 颜色统一由分类（POI 类型）决定：已安排点为分类色，未安排小圆点同色系
-        element.style.setProperty('--marker-color', point.color || '#52655e');
+        element.style.setProperty('--marker-color', point.color || '#3f7e73');
         if (point.isPlanned) {
             element.textContent = point.label;
         }

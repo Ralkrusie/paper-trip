@@ -6,25 +6,26 @@
 
 /* ---------- 设计变量 ---------- */
 :root {
-  --ink: #202823;
-  --ink-soft: #3f4b45;
-  --ink-muted: #66716b;
-  --map-night: #111a18;
-  --map-deep: #17211f;
-  --celadon: #78958b;
-  --celadon-light: #aebfb8;
-  --stone: #c9cec8;
-  --paper: #f2eee4;
-  --paper-bright: #f8f5ed;
-  --cinnabar: #a33a31;
-  --cinnabar-dark: #7e2b25;
-  --line: rgba(43, 54, 48, 0.24);
+  --ink: #1e302c;
+  --ink-soft: #39514c;
+  --ink-muted: #5e746e;
+  --map-night: #0f1f1d;
+  --map-deep: #152d2a;
+  --celadon: #4fa89a;
+  --celadon-light: #a6cec5;
+  --stone: #c5d2cb;
+  --paper: #eff2e2;
+  --paper-bright: #f8faee;
+  --cinnabar: #c05f0e;
+  --cinnabar-dark: #96490a;
+  --danger: #b23a22;
+  --line: rgba(31, 52, 48, 0.24);
   --panel-w: clamp(340px, 30vw, 400px);
   --font-display: "STXingkai", "华文行楷", "KaiTi", "楷体", serif;
   --font-ui: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --shadow-card: 0 2px 10px rgba(24, 32, 28, 0.08);
-  --shadow-float: 0 6px 22px rgba(10, 16, 13, 0.28);
+  --shadow-card: 0 2px 10px rgba(16, 40, 36, 0.08);
+  --shadow-float: 0 6px 22px rgba(8, 24, 20, 0.28);
   --radius: 10px;
   --z-map-ui: 20;
   --z-sidebar: 40;
@@ -337,7 +338,7 @@ img {
 
 .item-card.is-active {
   border-color: var(--cinnabar);
-  box-shadow: 0 0 0 2px rgba(163, 58, 49, 0.16), var(--shadow-card);
+  box-shadow: 0 0 0 2px rgba(192, 95, 14, 0.16), var(--shadow-card);
 }
 
 .item-card.is-dragging {
@@ -547,7 +548,7 @@ img {
 
 .mode-chip.is-active {
   border-color: var(--cinnabar);
-  background: rgba(163, 58, 49, 0.08);
+  background: rgba(192, 95, 14, 0.08);
   color: var(--cinnabar-dark);
   font-weight: 600;
 }
@@ -626,7 +627,7 @@ img {
 
 .place-card.is-active {
   border-color: var(--cinnabar);
-  box-shadow: 0 0 0 2px rgba(163, 58, 49, 0.16), var(--shadow-card);
+  box-shadow: 0 0 0 2px rgba(192, 95, 14, 0.16), var(--shadow-card);
 }
 
 .place-card.is-dragging {
@@ -849,15 +850,15 @@ img {
 
 .danger-btn {
   padding: 8px 12px;
-  border: 1px solid rgba(163, 58, 49, 0.5);
+  border: 1px solid rgba(178, 58, 34, 0.5);
   border-radius: 8px;
   background: transparent;
-  color: var(--cinnabar-dark);
+  color: var(--danger);
   font-size: 13px;
 }
 
 .danger-btn:hover {
-  background: rgba(163, 58, 49, 0.08);
+  background: rgba(178, 58, 34, 0.08);
 }
 
 /* ---------- 地图区 ---------- */
@@ -892,7 +893,7 @@ img {
   z-index: 100;
   pointer-events: none;
   opacity: 0;
-  background: rgba(8, 14, 12, 0.92);
+  background: rgba(8, 24, 20, 0.92);
   transition: opacity 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -919,7 +920,7 @@ img {
   padding: 7px 13px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(248, 245, 237, 0.94);
+  background: rgba(248, 250, 238, 0.94);
   color: var(--ink);
   font-size: 13px;
   box-shadow: var(--shadow-card);
@@ -943,8 +944,8 @@ img {
   max-width: min(86vw, 560px);
   padding: 8px 15px;
   border-radius: 999px;
-  background: rgba(17, 26, 24, 0.82);
-  color: rgba(242, 238, 228, 0.94);
+  background: rgba(15, 31, 29, 0.82);
+  color: rgba(248, 250, 238, 0.94);
   font-size: 12px;
   transform: translateX(-50%);
   backdrop-filter: blur(4px);
@@ -955,7 +956,7 @@ img {
   height: 7px;
   border-radius: 50%;
   background: var(--celadon-light);
-  box-shadow: 0 0 0 4px rgba(174, 191, 184, 0.18);
+  box-shadow: 0 0 0 4px rgba(166, 206, 197, 0.18);
 }
 
 .map-empty {
@@ -964,10 +965,10 @@ img {
   left: 50%;
   z-index: var(--z-map-ui);
   padding: 22px 30px;
-  border: 1px solid rgba(248, 245, 237, 0.25);
+  border: 1px solid rgba(248, 250, 238, 0.25);
   border-radius: 14px;
-  background: rgba(17, 26, 24, 0.78);
-  color: rgba(242, 238, 228, 0.92);
+  background: rgba(15, 31, 29, 0.78);
+  color: rgba(248, 250, 238, 0.92);
   line-height: 1.9;
   text-align: center;
   transform: translate(-50%, -55%);
@@ -983,8 +984,8 @@ img {
 
 .map-empty .ghost-btn {
   margin-top: 10px;
-  border-color: rgba(248, 245, 237, 0.4);
-  color: rgba(242, 238, 228, 0.92);
+  border-color: rgba(248, 250, 238, 0.4);
+  color: rgba(248, 250, 238, 0.92);
   pointer-events: auto;
 }
 
@@ -1018,9 +1019,9 @@ img {
   width: calc(26px * var(--marker-scale, 1));
   height: calc(26px * var(--marker-scale, 1));
   place-items: center;
-  border: 2px solid rgba(248, 245, 237, 0.95);
+  border: 2px solid rgba(248, 250, 238, 0.95);
   border-radius: 50%;
-  background: var(--marker-color, #52655e);
+  background: var(--marker-color, #3f7e73);
   color: #fffdf6;
   font-family: var(--font-ui);
   font-size: calc(12px * var(--marker-scale, 1));
@@ -1036,14 +1037,14 @@ img {
 
 .trip-marker.is-active {
   transform: scale(1.16);
-  box-shadow: 0 0 0 5px rgba(163, 58, 49, 0.32), 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 5px rgba(192, 95, 14, 0.32), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .trip-marker.is-dot {
   width: calc(12px * var(--marker-scale, 1));
   height: calc(12px * var(--marker-scale, 1));
   border-width: 2px;
-  background: var(--marker-color, #52655e);
+  background: var(--marker-color, #3f7e73);
   opacity: 0.75;
   font-size: 0;
 }
@@ -1100,7 +1101,7 @@ dialog.stats-modal {
 
 dialog.app-modal::backdrop,
 dialog.stats-modal::backdrop {
-  background: rgba(8, 14, 12, 0.55);
+  background: rgba(8, 24, 20, 0.55);
   backdrop-filter: blur(2px);
 }
 
@@ -1353,8 +1354,8 @@ dialog.stats-modal::backdrop {
 .toast {
   padding: 9px 18px;
   border-radius: 999px;
-  background: rgba(17, 26, 24, 0.9);
-  color: rgba(242, 238, 228, 0.96);
+  background: rgba(15, 31, 29, 0.9);
+  color: rgba(248, 250, 238, 0.96);
   font-size: 13px;
   box-shadow: var(--shadow-float);
   animation: toast-in 240ms var(--ease-out);
@@ -1394,7 +1395,7 @@ dialog.stats-modal::backdrop {
     border-top: 1px solid var(--line);
     border-right: none;
     border-radius: 18px 18px 0 0;
-    box-shadow: 0 -10px 34px rgba(8, 14, 12, 0.45);
+    box-shadow: 0 -10px 34px rgba(8, 24, 20, 0.45);
     transform: translateY(108%);
     transition: transform 320ms var(--ease-out);
   }
@@ -1414,7 +1415,7 @@ dialog.stats-modal::backdrop {
     padding: 10px 16px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: rgba(248, 245, 237, 0.95);
+    background: rgba(248, 250, 238, 0.95);
     color: var(--ink);
     font-size: 13px;
     font-weight: 600;
@@ -1542,7 +1543,7 @@ dialog.stats-modal::backdrop {
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(248, 245, 237, 0.96);
+  background: rgba(248, 250, 238, 0.96);
   color: var(--ink);
   font-size: 13px;
   box-shadow: var(--shadow-card);
@@ -1555,7 +1556,7 @@ dialog.stats-modal::backdrop {
 }
 
 .map-search .ghost-btn {
-  background: rgba(248, 245, 237, 0.96);
+  background: rgba(248, 250, 238, 0.96);
   box-shadow: var(--shadow-card);
 }
 
@@ -1585,7 +1586,7 @@ dialog.stats-modal::backdrop {
 .map-result {
   display: flex;
   align-items: stretch;
-  border-bottom: 1px solid rgba(43, 54, 48, 0.1);
+  border-bottom: 1px solid rgba(31, 52, 48, 0.1);
 }
 
 .map-result:last-child {
@@ -1616,7 +1617,7 @@ dialog.stats-modal::backdrop {
 .map-result-level {
   margin-left: 6px;
   padding: 0 6px;
-  border: 1px solid rgba(163, 58, 49, 0.35);
+  border: 1px solid rgba(192, 95, 14, 0.35);
   border-radius: 99px;
   color: var(--cinnabar-dark);
   font-size: 10.5px;
@@ -1638,14 +1639,14 @@ dialog.stats-modal::backdrop {
 .map-result-add {
   flex: 0 0 44px;
   border: none;
-  border-left: 1px solid rgba(43, 54, 48, 0.1);
+  border-left: 1px solid rgba(31, 52, 48, 0.1);
   background: transparent;
   color: var(--cinnabar-dark);
   font-size: 16px;
 }
 
 .map-result-add:hover {
-  background: rgba(163, 58, 49, 0.08);
+  background: rgba(192, 95, 14, 0.08);
 }
 
 .map-empty-sub {

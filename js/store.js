@@ -23,10 +23,10 @@
     var saveTimer = null;
 
     var DEFAULT_CATEGORIES = [
-        { id: 'transport', name: '交通', color: '#52bfa0' },
-        { id: 'hotel', name: '住宿', color: '#4e85c6' },
-        { id: 'dining', name: '餐饮', color: '#d47a4e' },
-        { id: 'activity', name: '活动', color: '#b1483d' }
+        { id: 'transport', name: '交通', color: '#2fa898' },
+        { id: 'hotel', name: '住宿', color: '#3f7e93' },
+        { id: 'dining', name: '餐饮', color: '#e8833a' },
+        { id: 'activity', name: '活动', color: '#be4a2d' }
     ];
 
     /** 旧版分类 → 新版四类（交通 / 住宿 / 餐饮 / 活动） */
@@ -48,8 +48,8 @@
     var LEG_DETOUR = 1.3;
 
     var DAY_COLORS = [
-        '#b1483d', '#4e85c6', '#5a9e6b', '#e8a640',
-        '#8b5ea8', '#d47a4e', '#5b8c8c', '#c4854a'
+        '#2fa898', '#e8833a', '#be4a2d', '#3f7e93',
+        '#7fa86b', '#c99a3a', '#5f9ea0', '#b58a6a'
     ];
 
     var DEFAULT_VIEW = { lng: 121.4737, lat: 31.2304, zoom: 11 };
