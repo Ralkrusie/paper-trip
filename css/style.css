@@ -116,18 +116,11 @@ img {
   padding: 16px 18px 10px;
 }
 
-.brand-seal {
-  display: grid;
+.brand-logo {
+  display: block;
   flex: 0 0 auto;
-  width: 42px;
   height: 42px;
-  place-items: center;
-  border-radius: 6px;
-  background: var(--cinnabar);
-  color: #fdf6ec;
-  font-family: var(--font-display);
-  font-size: 26px;
-  box-shadow: inset 0 0 0 2px rgba(253, 246, 236, 0.35);
+  width: auto;
 }
 
 .brand-text {
