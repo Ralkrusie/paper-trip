@@ -114,7 +114,7 @@ img {
 
 .side-head {
   display: flex;
-  gap: 12px;
+  gap: 13px;
   align-items: center;
   padding: 16px 18px 10px;
 }
@@ -122,7 +122,7 @@ img {
 .brand-logo {
   display: block;
   flex: 0 0 auto;
-  height: 42px;
+  height: 54px;
   width: auto;
 }
 
@@ -155,15 +155,16 @@ img {
 
 .brand-name {
   display: flex;
-  gap: 5px;
+  gap: 6px;
   align-items: baseline;
+  margin-bottom: 2px;
   padding: 0 4px;
 }
 
 .brand-cn {
   color: var(--ink);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1.15;
 }
 
@@ -171,7 +172,7 @@ img {
 .brand-dash {
   color: var(--ink-muted);
   font-size: 11px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
 }
 
 .side-tabs {
