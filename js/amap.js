@@ -179,7 +179,7 @@
             var polyline = new window.AMap.Polyline({
                 path: line.path,
                 zIndex: 40,
-                strokeColor: line.color || '#ef8a22',
+                strokeColor: line.color || '#f261a8',
                 strokeOpacity: 0.88,
                 strokeWeight: 4,
                 strokeStyle: 'dashed',

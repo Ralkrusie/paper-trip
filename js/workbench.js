@@ -578,10 +578,10 @@
 
     /** 连线颜色：粉色系渐深（玫粉 → 粉红 → 玫紫 → 紫，饱和度高，亮底暗底都清楚） */
     function legTravelColor(trips) {
-        if (trips >= 4) return '#b44f0a';
-        if (trips === 3) return '#dd6a0f';
-        if (trips === 2) return '#ef8a22';
-        return '#f4ad5e';
+        if (trips >= 4) return '#8247d1';
+        if (trips === 3) return '#ad41c3';
+        if (trips === 2) return '#d64397';
+        return '#f261a8';
     }
 
     function metaChip(text, className) {
@@ -2078,31 +2078,31 @@
         '*{box-sizing:border-box;margin:0;padding:0}',
         'body{background:#eff2e2;color:#1e302c;font:15px/1.7 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;padding:16px}',
         '.sheet{max-width:680px;margin:0 auto;background:#f8faee;border:1px solid rgba(31,52,48,.18);border-radius:14px;padding:26px 26px 20px;box-shadow:0 8px 30px rgba(16,40,36,.08)}',
-        '.sheet-head{display:flex;gap:14px;align-items:center;padding-bottom:16px;border-bottom:2px solid #c05f0e}',
-        '.seal{display:grid;place-items:center;width:46px;height:46px;border-radius:8px;background:#c05f0e;color:#fdf6ec;font-size:26px;font-family:"KaiTi","STKaiti",serif}',
+        '.sheet-head{display:flex;gap:14px;align-items:center;padding-bottom:16px;border-bottom:2px solid #2e8f80}',
+        '.seal{display:grid;place-items:center;width:46px;height:46px;border-radius:8px;background:#2e8f80;color:#fdf6ec;font-size:26px;font-family:"KaiTi","STKaiti",serif}',
         'h1{font-size:22px;letter-spacing:.02em}',
         '.brand{color:#5e746e;font-size:12px;letter-spacing:.12em}',
         '.trip-note{margin-top:16px;padding:12px 14px;border:1px dashed rgba(31,52,48,.3);border-radius:10px;background:#fbfcef}',
-        '.trip-note h2{font-size:14px;color:#96490a;margin-bottom:6px}',
+        '.trip-note h2{font-size:14px;color:#1f6e61;margin-bottom:6px}',
         '.trip-note p{font-size:13px;color:#39514c}',
         '.day{margin-top:22px}',
         '.day h2{display:flex;align-items:center;gap:10px;font-size:18px}',
-        '.day h2::before{content:"";width:10px;height:10px;border-radius:50%;background:#c05f0e}',
+        '.day h2::before{content:"";width:10px;height:10px;border-radius:50%;background:#2e8f80}',
         '.day-meta{margin:4px 0 10px;color:#5e746e;font-size:12.5px}',
         '.stops{list-style:none}',
         '.stop{display:grid;grid-template-columns:88px 1fr;gap:12px;padding:10px 12px;border:1px solid rgba(31,52,48,.16);border-radius:10px;background:#fff;box-shadow:0 2px 8px rgba(16,40,36,.05);page-break-inside:avoid;break-inside:avoid}',
-        '.stop.is-late{border-left:3px solid #c05f0e}',
+        '.stop.is-late{border-left:3px solid #2e8f80}',
         '.stop-time{display:flex;flex-direction:column;gap:2px}',
         '.stop-time strong{font-size:17px;font-variant-numeric:tabular-nums}',
-        '.stop-time strong.late{color:#c05f0e;font-size:14px}',
+        '.stop-time strong.late{color:#2e8f80;font-size:14px}',
         '.stop-time span{color:#5e746e;font-size:11.5px}',
         '.stop-body h3{font-size:15.5px}',
-        '.stop-body h3 em{font-style:normal;font-size:11px;font-weight:500;color:#96490a;border:1px solid rgba(192,95,14,.35);border-radius:99px;padding:0 8px;margin-left:6px;vertical-align:2px}',
+        '.stop-body h3 em{font-style:normal;font-size:11px;font-weight:500;color:#1f6e61;border:1px solid rgba(46,143,128,.35);border-radius:99px;padding:0 8px;margin-left:6px;vertical-align:2px}',
         '.addr{color:#39514c;font-size:12.5px;margin-top:2px}',
         '.stop-meta{color:#5e746e;font-size:12.5px;margin-top:2px}',
         '.note{color:#39514c;font-size:12.5px;margin-top:4px}',
         '.links{margin-top:6px}',
-        '.links a{color:#96490a;font-size:13px;text-decoration:none;border-bottom:1px dashed rgba(150,73,10,.5)}',
+        '.links a{color:#1f6e61;font-size:13px;text-decoration:none;border-bottom:1px dashed rgba(31,110,97,.5)}',
         '.transit{list-style:none;margin:4px 0 4px 44px;color:#5e746e;font-size:12px}',
         '.empty{color:#5e746e;font-size:13px}',
         '.sheet-foot{margin-top:24px;padding-top:12px;border-top:1px solid rgba(31,52,48,.18);color:#5e746e;font-size:11.5px}',

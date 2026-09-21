@@ -16,8 +16,8 @@
   --stone: #c5d2cb;
   --paper: #eff2e2;
   --paper-bright: #f8faee;
-  --cinnabar: #c05f0e;
-  --cinnabar-dark: #96490a;
+  --cinnabar: #2e8f80;
+  --cinnabar-dark: #1f6e61;
   --danger: #b23a22;
   --line: rgba(31, 52, 48, 0.24);
   --panel-w: clamp(340px, 30vw, 400px);
@@ -338,7 +338,7 @@ img {
 
 .item-card.is-active {
   border-color: var(--cinnabar);
-  box-shadow: 0 0 0 2px rgba(192, 95, 14, 0.16), var(--shadow-card);
+  box-shadow: 0 0 0 2px rgba(46, 143, 128, 0.16), var(--shadow-card);
 }
 
 .item-card.is-dragging {
@@ -548,7 +548,7 @@ img {
 
 .mode-chip.is-active {
   border-color: var(--cinnabar);
-  background: rgba(192, 95, 14, 0.08);
+  background: rgba(46, 143, 128, 0.08);
   color: var(--cinnabar-dark);
   font-weight: 600;
 }
@@ -627,7 +627,7 @@ img {
 
 .place-card.is-active {
   border-color: var(--cinnabar);
-  box-shadow: 0 0 0 2px rgba(192, 95, 14, 0.16), var(--shadow-card);
+  box-shadow: 0 0 0 2px rgba(46, 143, 128, 0.16), var(--shadow-card);
 }
 
 .place-card.is-dragging {
@@ -1037,7 +1037,7 @@ img {
 
 .trip-marker.is-active {
   transform: scale(1.16);
-  box-shadow: 0 0 0 5px rgba(192, 95, 14, 0.32), 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 5px rgba(46, 143, 128, 0.32), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .trip-marker.is-dot {
@@ -1617,7 +1617,7 @@ dialog.stats-modal::backdrop {
 .map-result-level {
   margin-left: 6px;
   padding: 0 6px;
-  border: 1px solid rgba(192, 95, 14, 0.35);
+  border: 1px solid rgba(46, 143, 128, 0.35);
   border-radius: 99px;
   color: var(--cinnabar-dark);
   font-size: 10.5px;
@@ -1646,7 +1646,7 @@ dialog.stats-modal::backdrop {
 }
 
 .map-result-add:hover {
-  background: rgba(192, 95, 14, 0.08);
+  background: rgba(46, 143, 128, 0.08);
 }
 
 .map-empty-sub {
