@@ -714,41 +714,23 @@
         TripMap.render(model);
     }
 
-    /** 全程统一编号：按「天序 → 天内序」给每个地点分配编号；交通 / 住宿用 A、B、C…，其余用 1、2、3… */
+    /** 全程统一编号：按「天序 → 天内序」给每个地点分配连续编号（1、2、3…，跨天不重置） */
     function buildStopLabels() {
         var labels = {};
         var number = 0;
-        var letter = 0;
         Store.state.days.forEach(function (day) {
             day.items.forEach(function (item) {
                 if (item.disabled || labels[item.placeId]) return;
-                var place = Store.getPlace(item.placeId);
-                if (!place) return;
-                if (place.categoryId === 'transport' || place.categoryId === 'hotel') {
-                    labels[item.placeId] = letterLabel(letter++);
-                } else {
-                    labels[item.placeId] = String(++number);
-                }
+                if (!Store.getPlace(item.placeId)) return;
+                labels[item.placeId] = String(++number);
             });
         });
         return labels;
     }
 
-    /** 字母序号：0→A、25→Z、26→AA… */
-    function letterLabel(index) {
-        var text = '';
-        var n = index + 1;
-        while (n > 0) {
-            var remainder = (n - 1) % 26;
-            text = String.fromCharCode(65 + remainder) + text;
-            n = Math.floor((n - 1) / 26);
-        }
-        return text;
-    }
-
-    /** 编号展示文本：1 →「第 1 站」；A →「A 站」 */
+    /** 编号展示文本：1 →「第 1 站」 */
     function stopLabelText(label) {
-        return /^[0-9]+$/.test(label) ? '第 ' + label + ' 站' : label + ' 站';
+        return '第 ' + label + ' 站';
     }
 
     function buildMapModel() {
