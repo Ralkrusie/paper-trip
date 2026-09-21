@@ -18,6 +18,8 @@
   --paper-bright: #f8faee;
   --cinnabar: #2e8f80;
   --cinnabar-dark: #1f6e61;
+  --highlight: #c9680f;
+  --highlight-dark: #9e510a;
   --danger: #b23a22;
   --line: rgba(31, 52, 48, 0.24);
   --panel-w: clamp(340px, 30vw, 400px);
@@ -202,11 +204,11 @@ img {
 }
 
 .side-tab.is-active {
-  color: var(--cinnabar-dark);
+  color: var(--highlight-dark);
 }
 
 .side-tab.is-active::after {
-  background: var(--cinnabar);
+  background: var(--highlight);
 }
 
 .side-pane {
@@ -274,14 +276,14 @@ img {
 }
 
 .day-tab.is-active {
-  border-color: var(--cinnabar);
-  background: var(--cinnabar);
+  border-color: var(--highlight);
+  background: var(--highlight);
   color: #fdf6ec;
 }
 
 .day-tab.is-drop {
   border-color: var(--celadon);
-  background: rgba(120, 149, 139, 0.25);
+  background: rgba(79, 168, 154, 0.25);
 }
 
 .day-meta {
@@ -337,8 +339,8 @@ img {
 }
 
 .item-card.is-active {
-  border-color: var(--cinnabar);
-  box-shadow: 0 0 0 2px rgba(46, 143, 128, 0.16), var(--shadow-card);
+  border-color: var(--highlight);
+  box-shadow: 0 0 0 2px rgba(201, 104, 15, 0.16), var(--shadow-card);
 }
 
 .item-card.is-dragging {
@@ -502,7 +504,7 @@ img {
 }
 
 .item-connector.is-action:hover {
-  background: rgba(120, 149, 139, 0.14);
+  background: rgba(79, 168, 154, 0.14);
   color: var(--celadon);
 }
 
@@ -547,9 +549,9 @@ img {
 }
 
 .mode-chip.is-active {
-  border-color: var(--cinnabar);
-  background: rgba(46, 143, 128, 0.08);
-  color: var(--cinnabar-dark);
+  border-color: var(--highlight);
+  background: rgba(201, 104, 15, 0.08);
+  color: var(--highlight-dark);
   font-weight: 600;
 }
 
@@ -595,8 +597,8 @@ img {
 }
 
 .chip.is-active {
-  border-color: var(--cinnabar);
-  background: var(--cinnabar);
+  border-color: var(--highlight);
+  background: var(--highlight);
   color: #fdf6ec;
 }
 
@@ -626,8 +628,8 @@ img {
 }
 
 .place-card.is-active {
-  border-color: var(--cinnabar);
-  box-shadow: 0 0 0 2px rgba(46, 143, 128, 0.16), var(--shadow-card);
+  border-color: var(--highlight);
+  box-shadow: 0 0 0 2px rgba(201, 104, 15, 0.16), var(--shadow-card);
 }
 
 .place-card.is-dragging {
@@ -724,7 +726,7 @@ img {
 }
 
 .day-picker-item:hover {
-  background: rgba(120, 149, 139, 0.14);
+  background: rgba(79, 168, 154, 0.14);
 }
 
 /* 已在当天时显示的 √（多次时带次数） */
@@ -839,12 +841,12 @@ img {
 }
 
 .ghost-btn.accent {
-  border-color: var(--cinnabar);
-  color: var(--cinnabar-dark);
+  border-color: var(--highlight);
+  color: var(--highlight-dark);
 }
 
 .ghost-btn.accent[aria-pressed="true"] {
-  background: var(--cinnabar);
+  background: var(--highlight);
   color: #fdf6ec;
 }
 
@@ -1001,10 +1003,10 @@ img {
   z-index: var(--z-toast);
   max-width: min(92vw, 560px);
   padding: 11px 16px;
-  border: 1px solid var(--cinnabar);
+  border: 1px solid var(--highlight);
   border-radius: 6px;
   background: var(--paper-bright);
-  color: var(--cinnabar-dark);
+  color: var(--highlight-dark);
   font-size: 13px;
   transform: translateX(-50%);
 }
@@ -1037,7 +1039,7 @@ img {
 
 .trip-marker.is-active {
   transform: scale(1.16);
-  box-shadow: 0 0 0 5px rgba(46, 143, 128, 0.32), 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 5px rgba(201, 104, 15, 0.32), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .trip-marker.is-dot {
@@ -1050,7 +1052,7 @@ img {
 }
 
 .trip-marker.is-dot.is-active {
-  background: var(--cinnabar);
+  background: var(--highlight);
   transform: scale(1.35);
   opacity: 1;
 }
@@ -1499,12 +1501,12 @@ dialog.stats-modal::backdrop {
 }
 
 .item-sub span.is-late {
-  color: var(--cinnabar);
+  color: var(--highlight);
   font-weight: 600;
 }
 
 .item-card.is-late {
-  border-left: 3px solid var(--cinnabar);
+  border-left: 3px solid var(--highlight);
 }
 
 .modal-hint {
@@ -1659,17 +1661,17 @@ dialog.stats-modal::backdrop {
   width: 22px;
   height: 22px;
   border-width: 3px;
-  background: var(--celadon);
+  background: var(--highlight);
   animation: preview-pulse 1.6s ease-out infinite;
 }
 
 @keyframes preview-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(120, 149, 139, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 0 rgba(201, 104, 15, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 
   100% {
-    box-shadow: 0 0 0 18px rgba(120, 149, 139, 0), 0 2px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 18px rgba(201, 104, 15, 0), 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 }
 
