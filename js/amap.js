@@ -32,8 +32,8 @@
     var styleModes = ['dark', 'normal', 'satellite'];
     var styleIndex = 0;
     var satelliteOn = false;   // 当前是否挂着卫星图层
-    var styleToken = 0;        // 样式切换令牌（防止快速连点时的异步竞态）
-    var desiredStyle = styleModes[0];  // 最新期望风格：所有异步校验都对照它判断
+    var builtStyle = styleModes[0];  // 当前实例构建时的风格（与期望不同才触发重建）
+    var builtView = '2D';            // 当前实例构建时的视图模式
     var viewMode = '2D';
     var focusFrame = null;
     var focusResolve = null;
@@ -123,8 +123,10 @@
                     });
                 }
 
-                // 统一走「应用 + 校验」循环：无论首次加载还是上次停在卫星，都保证收敛到期望风格
-                applyStyleMode(styleModes[styleIndex]);
+                // 新建实例上应用当前风格（运行时原地切换不可靠，详见 applyStyleOnFreshMap 注释）
+                applyStyleOnFreshMap(styleModes[styleIndex]);
+                builtStyle = styleModes[styleIndex];
+                builtView = viewMode;
 
                 map.on('click', emitMapClick);
 
@@ -559,82 +561,61 @@
         }, 380);
     }
 
-    /** 样式 URL / getMapStyle 返回值 → 可比较的短标识（'amap://styles/dark' → 'dark'） */
-    function styleKey(value) {
-        return String(value || '').split('/').pop().toLowerCase();
+    /** 卫星图层叠层（矢量底图 + 卫星瓦片）：仅在实例刚创建后调用 */
+    function attachSatelliteLayer() {
+        if (!map || !window.AMap || satelliteOn) return;
+        try {
+            if (window.AMap.TileLayer && typeof window.AMap.TileLayer.Satellite === 'function') {
+                map.setLayers([new window.AMap.TileLayer.Satellite()]);
+                satelliteOn = true;
+            }
+        } catch (error) {
+            console.error('[amap] 卫星图层开启失败：', error);
+        }
     }
-
-    /** 校验时间点（毫秒）：每次应用后在这些时间点验一次，不符就重发，最后一点仍不符则告警 */
-    var STYLE_RETRY_DELAYS = [400, 900, 2000, 3200];
 
     /**
-     * 应用底图风格（统一入口，带「应用 → 校验 → 重试」自愈循环）。
-     * 背景：setMapStyle 是异步加载样式资源，偶发静默失败——尤其紧跟在：
-     *   a) setLayers 切换图层之后（如卫星 → 矢量）；
-     *   b) 地图实例刚重建之后（2D / 3D 切换）；
-     *   c) 地图仍在初始化加载中。
-     * 因此这里在多个时间点反复校验 getMapStyle()：与期望不符就重新应用，
-     * 直到一致或重试耗尽（约 3 秒），保证最终状态一定收敛到期望值。
+     * 在「刚创建的实例」上应用风格。
+     * 根本教训（2026-09-22 实测）：
+     *   a) 运行中原地 setMapStyle 不可靠——卫星 → 矢量需先 setLayers 重建底图图层，
+     *      图层加载与样式加载竞态，样式请求常被静默吞掉；
+     *   b) getMapStyle() 返回「已请求」值而非实际渲染值，用它校验会被骗（永远报成功）；
+     *   c) 这解释了「刷新页面就正常」——新建实例上应用样式是唯一实测可靠的路径。
+     * 因此所有运行时风格切换一律走「销毁 + 重建实例」（rebuild），重建后调本函数兜底应用。
      */
-    function applyStyleMode(mode) {
-        if (!map || !window.AMap) {
-            desiredStyle = mode;
-            return;
+    function applyStyleOnFreshMap(mode) {
+        if (!map || !window.AMap) return;
+        if (mode === 'satellite') attachSatelliteLayer();
+        try {
+            map.setMapStyle(styleUrl(mode));
+        } catch (error) {
+            console.error('[amap] 样式应用失败：', error);
         }
-        desiredStyle = mode;
-        var token = ++styleToken;
-        var target = styleUrl(mode);
-        var targetKey = styleKey(target);
-        var wantSatellite = mode === 'satellite';
-
-        function syncLayers() {
-            try {
-                if (wantSatellite) {
-                    if (!satelliteOn && window.AMap.TileLayer && typeof window.AMap.TileLayer.Satellite === 'function') {
-                        map.setLayers([new window.AMap.TileLayer.Satellite()]);
-                        satelliteOn = true;
-                    }
-                } else if (satelliteOn) {
-                    // 从卫星切回：先恢复默认底图图层，矢量样式才能生效
-                    map.setLayers([new window.AMap.TileLayer()]);
-                    satelliteOn = false;
-                }
-            } catch (error) {
-                console.error('[amap] 图层切换失败：', error);
-            }
-        }
-
-        function attempt(index) {
-            if (!map || token !== styleToken || desiredStyle !== mode) return;
-            syncLayers();
-            try {
-                map.setMapStyle(target);
-            } catch (error) {
-                console.error('[amap] 样式切换失败：', error);
-            }
-
-            if (index >= STYLE_RETRY_DELAYS.length) return;
-            window.setTimeout(function () {
-                if (!map || token !== styleToken || desiredStyle !== mode) return;
-                var currentKey = '';
-                try {
-                    currentKey = typeof map.getMapStyle === 'function' ? styleKey(map.getMapStyle()) : targetKey;
-                } catch (error) {
-                    currentKey = '';
-                }
-                if (currentKey === targetKey) return;   // 已生效，提前结束
-                if (index === STYLE_RETRY_DELAYS.length - 1) {
-                    console.warn('[amap] 样式多次重试仍未生效：', mode, '当前=', currentKey || '未知');
-                    return;
-                }
-                attempt(index + 1);
-            }, STYLE_RETRY_DELAYS[index]);
-        }
-
-        attempt(0);
     }
 
-    /** 重建地图实例（仅用于 2D/3D 视图切换——viewMode 无法原位修改） */
+    /* 运行时重建调度：风格切换与 2D/3D 切换共用一次重建；切换过程中的连点合并成一次补重建 */
+    var switching = false;
+    var pendingRebuild = false;
+
+    function requestMapRebuild() {
+        if (!map || !window.AMap) return;
+        if (switching) {
+            pendingRebuild = true;
+            return;
+        }
+        if (styleModes[styleIndex] === builtStyle && viewMode === builtView) return;
+        switching = true;
+        triggerStyleTransition(rebuild);
+        window.setTimeout(function () {
+            switching = false;
+            if (pendingRebuild || styleModes[styleIndex] !== builtStyle || viewMode !== builtView) {
+                pendingRebuild = false;
+                requestMapRebuild();
+            }
+        }, 1600);
+    }
+
+    /** 重建地图实例（风格切换与 2D/3D 视图切换共用：运行时原地修改均不可靠） */
     function rebuild() {
         if (!map || !window.AMap) return;
         var container = map.getContainer();
@@ -685,8 +666,10 @@
             });
         }
 
-        // 重建后统一走「应用 + 校验」循环（构造参数里的 mapStyle 可能被静默忽略）
-        applyStyleMode(mode);
+        // 在新实例上应用风格，并记录本实例构建参数（供重建调度判断是否还需要重建）
+        applyStyleOnFreshMap(mode);
+        builtStyle = mode;
+        builtView = viewMode;
 
         render(lastModel);
     }
@@ -694,21 +677,15 @@
     function cycleStyle() {
         if (!isReady()) return styleModes[styleIndex];
         styleIndex = (styleIndex + 1) % styleModes.length;
-        var mode = styleModes[styleIndex];
-
-        triggerStyleTransition(function () {
-            applyStyleMode(mode);
-        });
-        return mode;
+        // 运行时原地 setMapStyle 不可靠（详见 applyStyleOnFreshMap 注释）：统一走重建
+        requestMapRebuild();
+        return styleModes[styleIndex];
     }
 
     function toggleViewMode() {
         if (!isReady()) return viewMode;
         viewMode = viewMode === '2D' ? '3D' : '2D';
-
-        triggerStyleTransition(function () {
-            rebuild();
-        });
+        requestMapRebuild();
         return viewMode;
     }
 
