@@ -177,7 +177,7 @@
         <p id="item-place-name" class="item-place-name">—</p>
         <div class="field-row">
           <label class="field">
-            <span>时间（固定时刻）</span>
+            <span>时间（固定时刻）<small class="field-tip">留空则按上一站推算</small></span>
             <input id="item-time" type="time">
           </label>
           <label class="field">
@@ -185,19 +185,20 @@
             <input id="item-stay" type="number" min="0" step="5" placeholder="60">
           </label>
         </div>
-        <label class="field">
-          <span>消费（元）</span>
-          <input id="item-cost" type="number" min="0" step="1" inputmode="decimal" placeholder="0">
-        </label>
-        <label class="field">
-          <span>所属天</span>
-          <select id="item-day"></select>
-        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>消费（元）</span>
+            <input id="item-cost" type="number" min="0" step="1" inputmode="decimal" placeholder="0">
+          </label>
+          <label class="field">
+            <span>所属天</span>
+            <select id="item-day"></select>
+          </label>
+        </div>
         <div class="field">
           <span>备注</span>
-          <textarea id="item-note" rows="2" maxlength="200" placeholder="预约、入场时间…"></textarea>
+          <textarea id="item-note" rows="4" maxlength="200" placeholder="预约、入场时间…"></textarea>
         </div>
-        <p class="modal-hint">时间 = 硬性时刻（如演出 19:30）；留空则按上一站 + 停留 + 通勤估算推算。通勤方式在两站之间的「通勤行」里设置。消费只在「统计」里汇总显示。</p>
       </div>
       <footer class="modal-foot">
         <button id="item-delete-btn" class="danger-btn" type="button">移除该站点</button>

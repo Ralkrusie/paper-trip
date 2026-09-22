@@ -1170,6 +1170,12 @@ dialog.stats-modal::backdrop {
   font-size: 12px;
 }
 
+.field-tip {
+  margin-left: 6px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
 .field input,
 .field select,
 .field textarea {
