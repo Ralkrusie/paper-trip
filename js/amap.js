@@ -169,26 +169,30 @@
         flowDots = [];
     }
 
-    /** 重建所有覆盖物。model: { points: [...], lines: [{ color, path }], flowPath: [[lng,lat],...] } */
+    /** 重建所有覆盖物。model: { points: [...], lines: [{ color, path, realPath }], flowPath: [[lng,lat],...] } */
     function render(model) {
         lastModel = model || { points: [], lines: [] };
         if (!isReady()) return;
         clearOverlays();
 
         (lastModel.lines || []).forEach(function (line) {
-            if (!line.path || line.path.length < 2) return;
-            var polyline = new window.AMap.Polyline({
-                path: line.path,
+            // 有高德真实路线时画实线（沿实际道路/线路），否则退回两站之间的虚线直连
+            var real = line.realPath && line.realPath.length >= 2 ? line.realPath : null;
+            var drawPath = real || line.path;
+            if (!drawPath || drawPath.length < 2) return;
+            var options = {
+                path: drawPath,
                 zIndex: 40,
                 strokeColor: line.color || '#f261a8',
-                strokeOpacity: 0.88,
+                strokeOpacity: real ? 0.92 : 0.88,
                 strokeWeight: 4,
-                strokeStyle: 'dashed',
-                strokeDasharray: [DASH_LEN, DASH_GAP],
+                strokeStyle: real ? 'solid' : 'dashed',
                 lineJoin: 'round',
                 lineCap: 'round',
                 showDir: false
-            });
+            };
+            if (!real) options.strokeDasharray = [DASH_LEN, DASH_GAP];
+            var polyline = new window.AMap.Polyline(options);
             map.add(polyline);
             lines.push(polyline);
         });
@@ -875,14 +879,18 @@
         });
     }
 
-    /** 公交换乘结果 → 每段乘车明细（线路 + 上车站 → 下车站，多段即换乘） */
+    /** 公交换乘结果 → 每段乘车明细（线路 + 上车站 → 下车站，多段即换乘）+ 全程真实轨迹 */
     function parseTransferRoute(status, result) {
         if (status !== 'complete' || !result || !result.plans || !result.plans.length) return null;
         var plan = result.plans[0];
         var segments = plan.segments || [];
         var rides = [];
+        var pathPoints = [];
         for (var i = 0; i < segments.length; i++) {
             var transit = segments[i] && segments[i].transit;
+            if (transit && transit.path && transit.path.length) {
+                pathPoints = pathPoints.concat(transit.path);
+            }
             if (!transit || !transit.lines || !transit.lines.length) continue;
             // 去掉线路名里的方向后缀，如「地铁1号线(莘庄--富锦路)」→「地铁1号线」
             var name = String(transit.lines[0].name || '').replace(/[（(].*$/, '').trim();
@@ -900,24 +908,49 @@
             walking: Number(plan.walking_distance) || 0,
             rides: rides,
             from: rides[0].from,
-            to: rides[rides.length - 1].to
+            to: rides[rides.length - 1].to,
+            path: normalizePath(pathPoints)
         };
     }
 
-    /** 步行 / 骑行 / 驾车结果 → 时长与距离 */
+    /** 高德返回的轨迹点（LngLat 对象或 [lng,lat]）→ 去重后的 [lng,lat] 数组 */
+    function normalizePath(points) {
+        var out = [];
+        (points || []).forEach(function (point) {
+            if (!point) return;
+            var lng = typeof point.getLng === 'function' ? point.getLng() : (point.lng !== undefined ? point.lng : point[0]);
+            var lat = typeof point.getLat === 'function' ? point.getLat() : (point.lat !== undefined ? point.lat : point[1]);
+            lng = Number(lng);
+            lat = Number(lat);
+            if (!isFinite(lng) || !isFinite(lat)) return;
+            var last = out[out.length - 1];
+            if (!last || Math.abs(last[0] - lng) > 1e-6 || Math.abs(last[1] - lat) > 1e-6) {
+                out.push([lng, lat]);
+            }
+        });
+        return out;
+    }
+
+    /** 步行 / 骑行 / 驾车结果 → 时长、距离与沿路轨迹 */
     function parseSimpleRoute(status, result) {
         if (status !== 'complete' || !result || !result.routes || !result.routes.length) return null;
         var route = result.routes[0] || {};
         var time = Number(route.time);
         var distance = Number(route.distance);
+        var pathPoints = [];
+        (route.steps || []).forEach(function (step) {
+            if (step && step.path && step.path.length) pathPoints = pathPoints.concat(step.path);
+        });
         return {
             time: isFinite(time) && time > 0 ? time : null,
             distance: isFinite(distance) && distance > 0 ? distance : null,
             walking: null,
             cost: null,
             lines: null,
+            rides: null,
             from: '',
-            to: ''
+            to: '',
+            path: normalizePath(pathPoints)
         };
     }
 

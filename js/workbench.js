@@ -639,7 +639,7 @@
             .then(function (route) {
                 routeCache[key] = route || null;
                 delete routePending[key];
-                if (route) scheduleTimelineRefresh();
+                if (route) scheduleRouteRefresh();
                 return routeCache[key];
             }, function () {
                 routeCache[key] = null;
@@ -724,15 +724,16 @@
         return map;
     }
 
-    /* 真实路线陆续就绪后，刷新时间轴相关的显示（卡片时间、当天统计行） */
-    var timelineRefreshTimer = null;
+    /* 真实路线陆续就绪后，刷新时间轴与地图（卡片时间、当天统计行、地图真实路径线） */
+    var routeRefreshTimer = null;
 
-    function scheduleTimelineRefresh() {
-        if (timelineRefreshTimer) return;
-        timelineRefreshTimer = window.setTimeout(function () {
-            timelineRefreshTimer = null;
+    function scheduleRouteRefresh() {
+        if (routeRefreshTimer) return;
+        routeRefreshTimer = window.setTimeout(function () {
+            routeRefreshTimer = null;
             renderDayMeta();
             renderItems();
+            renderMap();
         }, 80);
     }
 
@@ -935,40 +936,66 @@
         });
 
         // 全程一条线：各天行程首尾相接（跨天也相连），颜色随「这段路要走的次数」加深；
-        // 同一对地点（如酒店 ↔ 歌剧院往返）只画一条，避免虚线相位交错叠成“实线”
-        var stops = [];
-        Store.state.days.forEach(function (day) {
-            day.items
-                .filter(function (item) { return !item.disabled; })
-                .forEach(function (item) {
-                    var place = Store.getPlace(item.placeId);
-                    if (place) stops.push(place);
-                });
-        });
-
-        // 站点顺序（供流动箭头使用，保留往返完整路径）
+        // 同一对地点（如酒店 ↔ 歌剧院往返）只画一条，避免虚线相位交错叠成“实线”；
+        // 有了高德真实路线后沿真实道路/线路画实线，流动箭头也改走真实轨迹
         var flowPath = [];
-        stops.forEach(function (place) {
-            var last = flowPath[flowPath.length - 1];
-            if (!last || Math.abs(last[0] - place.lng) > 1e-6 || Math.abs(last[1] - place.lat) > 1e-6) {
-                flowPath.push([place.lng, place.lat]);
-            }
-        });
-
         var lines = [];
         var drawnPairs = {};
-        for (var i = 1; i < stops.length; i++) {
-            var from = stops[i - 1];
-            var to = stops[i];
-            if (from.id === to.id) continue;
-            var pairKey = from.id < to.id ? from.id + '|' + to.id : to.id + '|' + from.id;
-            if (drawnPairs[pairKey]) continue;
-            drawnPairs[pairKey] = true;
-            lines.push({
-                color: legTravelColor(countLegTrips(from.id, to.id)),
-                path: [[from.lng, from.lat], [to.lng, to.lat]]
-            });
+        var prev = null;
+
+        function pushFlowPoint(point) {
+            var last = flowPath[flowPath.length - 1];
+            if (!last || Math.abs(last[0] - point[0]) > 1e-6 || Math.abs(last[1] - point[1]) > 1e-6) {
+                flowPath.push(point);
+            }
         }
+
+        Store.state.days.forEach(function (day) {
+            day.items.forEach(function (item) {
+                if (item.disabled) return;
+                var place = Store.getPlace(item.placeId);
+                if (!place) return;
+
+                if (!prev) {
+                    pushFlowPoint([place.lng, place.lat]);
+                    prev = { item: item, place: place };
+                    return;
+                }
+                if (prev.place.id === place.id) {
+                    // 连续同站（如酒店停留 → 出发）不画线，但通勤方式以最后一项为准
+                    prev = { item: item, place: place };
+                    return;
+                }
+
+                var mode = (prev.item.leg && prev.item.leg.mode) || '';
+                var route = routeFetchable(mode)
+                    ? routeCache[routeKey(mode, prev.place, place)]
+                    : null;
+                var realPath = route && route.path && route.path.length >= 2 ? route.path : null;
+
+                // 流动箭头路径：真实路线优先（方向与行进方向一致）
+                if (realPath) {
+                    realPath.forEach(pushFlowPoint);
+                } else {
+                    pushFlowPoint([prev.place.lng, prev.place.lat]);
+                    pushFlowPoint([place.lng, place.lat]);
+                }
+
+                var pairKey = prev.place.id < place.id
+                    ? prev.place.id + '|' + place.id
+                    : place.id + '|' + prev.place.id;
+                if (!drawnPairs[pairKey]) {
+                    drawnPairs[pairKey] = true;
+                    lines.push({
+                        color: legTravelColor(countLegTrips(prev.place.id, place.id)),
+                        path: [[prev.place.lng, prev.place.lat], [place.lng, place.lat]],
+                        realPath: realPath
+                    });
+                }
+
+                prev = { item: item, place: place };
+            });
+        });
 
         return { points: points, lines: lines, flowPath: flowPath };
     }
