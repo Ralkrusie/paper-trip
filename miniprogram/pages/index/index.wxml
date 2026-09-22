@@ -190,7 +190,7 @@
                 <view class="btn block" hover-class="btn-hover" bindtap="exportData">导出数据（复制到剪贴板）</view>
                 <view class="field" style="margin-top: 20rpx;">
                     <text class="field-label">导入数据（粘贴 JSON 后点导入，将覆盖当前全部数据）</text>
-                    <textarea class="textarea" value="{{importText}}" bindinput="onImportText"
+                    <textarea class="textarea" value="{{importText}}" bindinput="onImportText" maxlength="-1"
                         placeholder='粘贴网页版导出的 JSON，或本页导出的备份' />
                 </view>
                 <view class="btn block" hover-class="btn-hover" bindtap="doImport">导入</view>
