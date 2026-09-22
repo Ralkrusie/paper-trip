@@ -69,7 +69,6 @@
             styleBtn: $('style-btn'),
             viewBtn: $('view-btn'),
             helpBtn: $('help-btn'),
-            mapStatus: $('map-status'),
             mapEmpty: $('map-empty'),
             mapEmptyBtn: $('map-empty-btn'),
             sheetToggle: $('sheet-toggle'),
@@ -94,6 +93,7 @@
             itemPlaceName: $('item-place-name'),
             itemTime: $('item-time'),
             itemStay: $('item-stay'),
+            itemCost: $('item-cost'),
             itemDay: $('item-day'),
             itemNote: $('item-note'),
             itemDeleteBtn: $('item-delete-btn'),
@@ -133,6 +133,7 @@
 
         bindStaticEvents();
         updateViewButtonLabel();
+        updateStyleButtonLabel();
         renderAll();
     }
 
@@ -240,6 +241,7 @@
             if (!TripMap.isReady()) { toast('地图尚未就绪'); return; }
             var mode = TripMap.cycleStyle();
             Store.updateSettings({ mapStyle: mode });
+            updateStyleButtonLabel();
             toast('地图风格：' + styleLabel(mode));
         });
         els.viewBtn.addEventListener('click', function () {
@@ -345,7 +347,6 @@
         renderLibrary();
         renderMap();
         renderEmptyStates();
-        renderStatusSummary();
     }
 
     function renderDayTabs() {
@@ -819,16 +820,6 @@
         }
     }
 
-    function renderStatusSummary() {
-        if (!mapReady) return;
-        var total = Store.totalStats();
-        if (!total.places) {
-            updateStatus('地图已就绪 · 点击地图空白处添加地点');
-        } else {
-            updateStatus('共 ' + total.places + ' 个地点 · 已安排 ' + total.count + ' 站 · 直线总里程 ' + total.distance.toFixed(1) + ' km');
-        }
-    }
-
     /* ================= 面板切换 ================= */
 
     function switchPane(pane) {
@@ -872,14 +863,6 @@
         highlightCards();
         TripMap.setActive(placeId);
 
-        var usages = Store.placeUsage(placeId);
-        if (usages.length) {
-            var label = buildStopLabels()[placeId];
-            updateStatus(usages[0].dayName + ' · ' + (label ? stopLabelText(label) : '已移除') + '：' + place.name);
-        } else {
-            updateStatus('未安排：' + place.name + '（在地点库点 ＋ 加入某一天）');
-        }
-
         if (options.focus) {
             TripMap.focusPlace(placeId);
             if (window.innerWidth <= 900) closeSheet();
@@ -905,10 +888,6 @@
         if (card && card.offsetParent !== null) {
             card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
-    }
-
-    function updateStatus(text) {
-        if (els.mapStatus) els.mapStatus.textContent = text;
     }
 
     function currentViewCenter() {
@@ -1441,14 +1420,12 @@
             }
             if (index >= items.length) {
                 stopPlayback();
-                updateStatus('已浏览完 ' + day.name + ' 的全部站点');
                 return;
             }
             var place = Store.getPlace(items[index].placeId);
             index += 1;
             if (place) {
                 selectPlace(place.id, { focus: true });
-                updateStatus(day.name + ' · 第 ' + index + ' / ' + items.length + ' 站：' + place.name);
             }
             playbackTimer = window.setTimeout(visitNext, 3000);
         }
@@ -1478,10 +1455,8 @@
             : [];
         if (ids.length >= 2) {
             TripMap.fitBounds(ids);
-            updateStatus('已显示 ' + day.name + ' 的路线（' + ids.length + ' 站）');
         } else {
             TripMap.fitBounds(null);
-            updateStatus('已显示全部地点');
         }
     }
 
@@ -1738,7 +1713,6 @@
         if (!TripMap.isReady()) return;
         TripMap.previewLocation(result.lng, result.lat);
         TripMap.flyTo(result.lng, result.lat);
-        updateStatus('预览：' + result.name + (result.address ? '（' + result.address + '）' : ''));
     }
 
     function hideGlobalResults() {
@@ -1840,6 +1814,7 @@
         els.itemPlaceName.textContent = place ? place.name : '未知地点';
         els.itemTime.value = found.item.time || '';
         els.itemStay.value = found.item.stay || '';
+        els.itemCost.value = found.item.cost ? found.item.cost : '';
         els.itemNote.value = found.item.note || '';
         els.itemDeleteBtn.textContent = found.item.disabled ? '恢复该站点' : '移除该站点';
 
@@ -1864,6 +1839,7 @@
         Store.updateItem(editingItemId, {
             time: els.itemTime.value || '',
             stay: els.itemStay.value === '' ? '' : String(Math.max(0, parseInt(els.itemStay.value, 10) || 0)),
+            cost: els.itemCost.value === '' ? 0 : Math.max(0, parseFloat(els.itemCost.value) || 0),
             note: els.itemNote.value.trim()
         });
 
@@ -2276,15 +2252,21 @@
     function onMapFail() {
         mapReady = false;
         if (els.fallback) els.fallback.hidden = false;
-        updateStatus('地图不可用 · 数据编辑功能不受影响');
         els.mapEmpty.hidden = true;
     }
 
     /* ================= 工具 ================= */
 
     function updateViewButtonLabel() {
-        var mode = (Store.state.settings && Store.state.settings.viewMode) || '2D';
-        els.viewBtn.textContent = mode === '3D' ? '2D' : '3D';
+        var mode = (Store.state.settings && Store.state.settings.viewMode) === '3D' ? '3D' : '2D';
+        els.viewBtn.textContent = mode;
+        els.viewBtn.title = '当前视图：' + mode + ' · 点击切换 2D / 3D';
+    }
+
+    function updateStyleButtonLabel() {
+        var mode = (Store.state.settings && Store.state.settings.mapStyle) || 'dark';
+        els.styleBtn.textContent = styleLabel(mode);
+        els.styleBtn.title = '当前风格：' + styleLabel(mode) + ' · 点击切换（暗黑 / 标准 / 卫星）';
     }
 
     function styleLabel(mode) {

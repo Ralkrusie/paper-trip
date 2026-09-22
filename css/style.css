@@ -936,32 +936,6 @@ img {
   transform: translateY(-1px);
 }
 
-.map-status {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  z-index: var(--z-map-ui);
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  max-width: min(86vw, 560px);
-  padding: 8px 15px;
-  border-radius: 999px;
-  background: rgba(15, 31, 29, 0.82);
-  color: rgba(248, 250, 238, 0.94);
-  font-size: 12px;
-  transform: translateX(-50%);
-  backdrop-filter: blur(4px);
-}
-
-.map-status-mark {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--celadon-light);
-  box-shadow: 0 0 0 4px rgba(166, 206, 197, 0.18);
-}
-
 .map-empty {
   position: absolute;
   top: 50%;
@@ -1321,6 +1295,12 @@ dialog.stats-modal::backdrop {
   font-size: 13px;
 }
 
+.stats-cost {
+  padding: 6px 18px 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
 .stats-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1436,12 +1416,6 @@ dialog.stats-modal::backdrop {
   .map-action {
     padding: 6px 10px;
     font-size: 12px;
-  }
-
-  .map-status {
-    bottom: calc(16px + env(safe-area-inset-bottom));
-    max-width: 56vw;
-    font-size: 11px;
   }
 
   .field-row {

@@ -8,6 +8,12 @@
     var instances = [];
     var PALETTE = ['#2fa898', '#e8833a', '#be4a2d', '#3f7e93', '#7fa86b', '#c99a3a', '#5f9ea0', '#b58a6a'];
 
+    /** 金额显示：整数不带小数，非整保留两位 */
+    function formatMoney(value) {
+        var n = Math.round((Number(value) || 0) * 100) / 100;
+        return n % 1 === 0 ? String(n) : n.toFixed(2);
+    }
+
     function disposeCharts() {
         instances.forEach(function (chart) {
             try { chart.dispose(); } catch (error) { /* 忽略 */ }
@@ -109,6 +115,30 @@
                 ' 站 · 直线总里程 ' + totals.distance.toFixed(1) + ' km';
         }
 
+        // 消费汇总（仅统计页显示；不含已移除的站点）
+        var costLine = document.getElementById('stats-cost');
+        var costPanel = document.getElementById('chart-day-cost');
+        var dayCosts = days.map(function (day) { return Number(Store.dayStats(day).cost.toFixed(2)); });
+        var costByCategory = {};
+        days.forEach(function (day) {
+            day.items.forEach(function (item) {
+                if (item.disabled || !item.cost) return;
+                var place = Store.getPlace(item.placeId);
+                if (place) costByCategory[place.categoryId] = (costByCategory[place.categoryId] || 0) + Number(item.cost);
+            });
+        });
+        if (costLine) {
+            if (totals.cost > 0) {
+                var parts = Object.keys(costByCategory).map(function (categoryId) {
+                    return Store.getCategory(categoryId).name + ' ¥' + formatMoney(costByCategory[categoryId]);
+                });
+                costLine.textContent = '消费合计 ¥' + formatMoney(totals.cost) + (parts.length ? ' · ' + parts.join(' / ') : '');
+            } else {
+                costLine.textContent = '消费：暂无记录——在行程项编辑弹窗里填写「消费（元）」，这里会自动汇总（不上卡片与行程单）。';
+            }
+        }
+        if (costPanel) costPanel.hidden = !(totals.cost > 0);
+
         if (!window.echarts) {
             if (summary) summary.textContent += '（图表库未加载，已显示文字统计）';
             return;
@@ -125,6 +155,11 @@
 
         var chartDistance = initChart('chart-day-distance');
         if (chartDistance) chartDistance.setOption(barOption('每日直线里程（km）', dayNames, distances));
+
+        if (totals.cost > 0) {
+            var chartCost = initChart('chart-day-cost');
+            if (chartCost) chartCost.setOption(barOption('每日消费（元）', dayNames, dayCosts));
+        }
 
         var plannedPlaces = [];
         days.forEach(function (day) {

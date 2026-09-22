@@ -169,6 +169,12 @@
         };
     }
 
+    function normalizeCost(value) {
+        var n = Number(value);
+        if (!isFinite(n) || n <= 0) return 0;
+        return Math.round(n * 100) / 100;
+    }
+
     function normalizeItem(raw) {
         if (!raw || typeof raw !== 'object' || typeof raw.placeId !== 'string') return null;
         var rawLeg = raw.leg && typeof raw.leg === 'object' ? raw.leg : {};
@@ -177,6 +183,7 @@
             placeId: raw.placeId,
             time: /^\d{2}:\d{2}$/.test(raw.time || '') ? raw.time : '',
             stay: raw.stay === 0 || raw.stay ? String(raw.stay) : '',
+            cost: normalizeCost(raw.cost),
             note: String(raw.note || ''),
             disabled: raw.disabled === true,
             leg: {
@@ -419,6 +426,7 @@
                 placeId: placeId,
                 time: '',
                 stay: '',
+                cost: 0,
                 note: '',
                 disabled: false,
                 leg: { mode: '', note: '' }
@@ -445,6 +453,7 @@
             var item = found.item;
             if (patch.time !== undefined) item.time = patch.time;
             if (patch.stay !== undefined) item.stay = patch.stay === '' ? '' : String(patch.stay);
+            if (patch.cost !== undefined) item.cost = normalizeCost(patch.cost);
             if (patch.note !== undefined) item.note = String(patch.note || '');
             if (patch.disabled !== undefined) item.disabled = Boolean(patch.disabled);
             if (patch.leg !== undefined && patch.leg !== null) {
@@ -584,9 +593,12 @@
             for (var i = 1; i < places.length; i++) {
                 distance += computeDistKm(places[i - 1].lat, places[i - 1].lng, places[i].lat, places[i].lng);
             }
+            var cost = 0;
+            active.forEach(function (it) { cost += Number(it.cost) || 0; });
             return {
                 count: active.length,
                 distance: distance,
+                cost: cost,
                 places: places,
                 disabledCount: day.items.length - active.length
             };
@@ -594,11 +606,12 @@
 
         totalStats: function () {
             var self = this;
-            var totals = { places: this.state.places.length, count: 0, distance: 0 };
+            var totals = { places: this.state.places.length, count: 0, distance: 0, cost: 0 };
             this.state.days.forEach(function (day) {
                 var stats = self.dayStats(day);
                 totals.count += stats.count;
                 totals.distance += stats.distance;
+                totals.cost += stats.cost;
             });
             return totals;
         },

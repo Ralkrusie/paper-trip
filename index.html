@@ -95,14 +95,9 @@
       <div class="map-events" role="toolbar" aria-label="地图工具">
         <button id="stats-btn" class="map-action" type="button">📊 统计</button>
         <button id="itinerary-btn" class="map-action" type="button" title="导出行程单（离线 HTML，可发到手机，可打印）">行程单</button>
-        <button id="style-btn" class="map-action" type="button" title="切换地图风格（暗黑 / 标准 / 卫星）">风格</button>
-        <button id="view-btn" class="map-action" type="button" title="切换 2D / 3D 视图">3D</button>
+        <button id="style-btn" class="map-action" type="button" title="切换地图风格（暗黑 / 标准 / 卫星）">暗黑</button>
+        <button id="view-btn" class="map-action" type="button" title="切换 2D / 3D 视图">2D</button>
         <button id="help-btn" class="map-action" type="button">帮助</button>
-      </div>
-
-      <div class="map-status" aria-live="polite">
-        <span class="map-status-mark" aria-hidden="true"></span>
-        <span id="map-status">正在加载地图…</span>
       </div>
 
       <div id="map-empty" class="map-empty" hidden>
@@ -191,6 +186,10 @@
           </label>
         </div>
         <label class="field">
+          <span>消费（元）</span>
+          <input id="item-cost" type="number" min="0" step="1" inputmode="decimal" placeholder="0">
+        </label>
+        <label class="field">
           <span>所属天</span>
           <select id="item-day"></select>
         </label>
@@ -198,7 +197,7 @@
           <span>备注</span>
           <textarea id="item-note" rows="2" maxlength="200" placeholder="预约、入场时间…"></textarea>
         </div>
-        <p class="modal-hint">时间 = 硬性时刻（如演出 19:30）；留空则按上一站 + 停留 + 通勤估算推算。通勤方式在两站之间的「通勤行」里设置。</p>
+        <p class="modal-hint">时间 = 硬性时刻（如演出 19:30）；留空则按上一站 + 停留 + 通勤估算推算。通勤方式在两站之间的「通勤行」里设置。消费只在「统计」里汇总显示。</p>
       </div>
       <footer class="modal-foot">
         <button id="item-delete-btn" class="danger-btn" type="button">移除该站点</button>
@@ -294,9 +293,11 @@
         <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
       </header>
       <p id="stats-summary" class="stats-summary">—</p>
+      <p id="stats-cost" class="stats-cost">—</p>
       <div class="stats-body">
         <div id="chart-day-count" class="chart-panel"></div>
         <div id="chart-day-distance" class="chart-panel"></div>
+        <div id="chart-day-cost" class="chart-panel"></div>
         <div id="chart-category" class="chart-panel"></div>
       </div>
     </div>
@@ -321,6 +322,7 @@
             ×N）；白色小箭头沿路线循环流动，指示行进方向；标记编号为**全程统一字母序号**（A、B、C…，超过 26 站后接 27、28…，跨天连续不重置），各天路线首尾相连；地图标记会随缩放自动放大缩小。</li>
           <li><strong>移除与恢复</strong>：点 ⊖ 会移除该站点（变灰沉到当天最下方，不再计入时间轴、地图与统计），随时可恢复或彻底删除。</li>
           <li><strong>时间轴</strong>：行程项填了时间 = 硬性时刻（如演出 19:30）；留空则按「上一站 + 停留 + 通勤」自动推算。卡片上圆点后的时间即推算结果，迟到会标红。</li>
+          <li><strong>消费记账</strong>：在行程项的编辑弹窗里填「消费（元）」，点「统计」查看合计 / 每日金额 / 分类明细——只出现在统计里，不会上卡片、地图或行程单。</li>
           <li><strong>手机查看</strong>：点「行程单」导出离线 HTML 发到手机（微信文件传输助手即可），离线可看，站点里的「高德导航」可一键唤起地图 App。同一 Wi-Fi
             下，手机浏览器也能访问电脑的局域网地址实时使用。</li>
           <li><strong>数据保存</strong>：数据自动保存在浏览器本地（localStorage）。换浏览器或清理缓存前，请先导出 JSON 备份。</li>
