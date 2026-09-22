@@ -27,7 +27,7 @@
         <view class="field">
             <text class="field-label">所属天</text>
             <picker mode="selector" range="{{dayLabels}}" value="{{dayIndex}}" bindchange="onDayChange">
-                <view class="picker-value">{{dayLabels[dayIndex]}}</view>
+                <view class="picker-value">{{dayLabelText}}</view>
             </picker>
         </view>
         <view class="field">

@@ -24,6 +24,7 @@ Page({
 
         dayIndex: 0,
         dayLabels: [],
+        dayLabelText: '',
 
         hasNext: false,
         nextName: '',
@@ -102,6 +103,7 @@ Page({
             disabled: Boolean(item.disabled),
             dayIndex: dayIndex,
             dayLabels: dayOptions.map(function (option) { return option.label; }),
+            dayLabelText: dayOptions[dayIndex] ? dayOptions[dayIndex].label : '',
             hasNext: Boolean(this._legContext),
             nextName: toPlace ? toPlace.name : '',
             modes: modes,
@@ -134,7 +136,11 @@ Page({
     },
 
     onDayChange: function (event) {
-        this.setData({ dayIndex: Number(event.detail.value) });
+        var index = Number(event.detail.value);
+        this.setData({
+            dayIndex: index,
+            dayLabelText: this.data.dayLabels[index] || ''
+        });
     },
 
     /* ================= 通勤 ================= */

@@ -79,6 +79,20 @@ miniprogram/
 python tools/gen_mini_assets.py
 ```
 
+## 静态自检
+
+改完代码可先跑一遍仓库根目录的零依赖自检脚本（校验 JSON、页面四件套、事件绑定、require 路径）：
+
+```bash
+node tools/mini_check.js
+```
+
+没有装 Node 也没关系，可用微信开发者工具自带的 Node，例如：
+
+```powershell
+& "D:\Development\微信web开发者工具\node-18.exe" tools\mini_check.js
+```
+
 ## 已知差异与后续优化
 
 - **底图**：微信 `map` 组件底图为腾讯提供（GCJ-02 坐标系，与高德路线叠加一致）；
