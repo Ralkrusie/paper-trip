@@ -531,9 +531,10 @@
          * 推算某天的时间轴（仅统计启用中的行程项）。
          * 规则：item.time 是硬性时刻（锚点）；没有时间的项从上一项推算；
          * 相邻两站之间用 item.leg（通勤方式）估算时长，「其他」不参与时间推算。
+         * realLegMinutes（可选）：{ itemId: 分钟 } —— 高德真实通勤时长，优先于本地估算。
          * 返回 [{ item, place, fixed, start, end, late, lateBy, legMode, legMinutes, legNote, legEstimated }]
          */
-        computeTimeline: function (day) {
+        computeTimeline: function (day, realLegMinutes) {
             var entries = [];
             if (!day) return entries;
 
@@ -558,9 +559,14 @@
                 var legMinutes = null;
                 var legEstimated = false;
                 if (place && nextPlace) {
-                    var km = computeDistKm(place.lat, place.lng, nextPlace.lat, nextPlace.lng);
-                    legMinutes = estimateLegMinutes(legMode, km);
-                    legEstimated = !legMode && legMinutes !== null;
+                    var real = realLegMinutes && realLegMinutes[item.id];
+                    if (typeof real === 'number' && isFinite(real) && real > 0) {
+                        legMinutes = real;
+                    } else {
+                        var km = computeDistKm(place.lat, place.lng, nextPlace.lat, nextPlace.lng);
+                        legMinutes = estimateLegMinutes(legMode, km);
+                        legEstimated = !legMode && legMinutes !== null;
+                    }
                 } else {
                     legNote = '';
                 }

@@ -412,7 +412,7 @@
         var day = Store.getDay(activeDayId);
         if (!day) return;
         var stats = Store.dayStats(day);
-        var timeline = Store.computeTimeline(day);
+        var timeline = Store.computeTimeline(day, realLegMinutesFor(day));
         var parts = [day.name];
         if (day.date && dayTabLabel(day) !== day.name) parts.push(formatDateLabel(day.date));
         parts.push(stats.count + ' 站');
@@ -433,7 +433,7 @@
         els.itemList.innerHTML = '';
         if (!day) return;
 
-        var timeline = Store.computeTimeline(day);
+        var timeline = Store.computeTimeline(day, realLegMinutesFor(day));
         var labels = buildStopLabels();
 
         timeline.forEach(function (entry, index) {
@@ -639,6 +639,7 @@
             .then(function (route) {
                 routeCache[key] = route || null;
                 delete routePending[key];
+                if (route) scheduleTimelineRefresh();
                 return routeCache[key];
             }, function () {
                 routeCache[key] = null;
@@ -703,6 +704,36 @@
         }
         if (entry.legNote) parts.push(entry.legNote);
         return parts.join(' · ');
+    }
+
+    /** 当前天各行程项的高德真实通勤分钟（{itemId: 分钟}），供时间轴推算优先使用 */
+    function realLegMinutesFor(day) {
+        var map = {};
+        if (!day) return map;
+        var active = day.items.filter(function (item) { return !item.disabled; });
+        for (var i = 0; i + 1 < active.length; i++) {
+            var item = active[i];
+            var mode = (item.leg && item.leg.mode) || '';
+            if (!routeFetchable(mode)) continue;
+            var from = Store.getPlace(item.placeId);
+            var to = Store.getPlace(active[i + 1].placeId);
+            if (!from || !to) continue;
+            var route = routeCache[routeKey(mode, from, to)];
+            if (route && route.time) map[item.id] = Math.max(1, Math.round(route.time / 60));
+        }
+        return map;
+    }
+
+    /* 真实路线陆续就绪后，刷新时间轴相关的显示（卡片时间、当天统计行） */
+    var timelineRefreshTimer = null;
+
+    function scheduleTimelineRefresh() {
+        if (timelineRefreshTimer) return;
+        timelineRefreshTimer = window.setTimeout(function () {
+            timelineRefreshTimer = null;
+            renderDayMeta();
+            renderItems();
+        }, 80);
     }
 
     /** 这段通勤在整段行程里需要走的次数（同一对地点去/回都算，跨天累计） */
@@ -2282,7 +2313,7 @@
 
         var dayBlocks = state.days.map(function (day) {
             var stats = Store.dayStats(day);
-            var timeline = Store.computeTimeline(day);
+            var timeline = Store.computeTimeline(day, realLegMinutesFor(day));
             var parts = [];
             if (day.date) parts.push(formatDateLabel(day.date));
             parts.push(stats.count + ' 站');
