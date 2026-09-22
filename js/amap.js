@@ -20,6 +20,7 @@
     var flowDots = [];       // 光点运动数据 { marker, path, cum, totalKm, totalMs }
     var flowRaf = null;
     var flowEpoch = 0;
+    var tourState = null;    // 路线浏览（跟随箭头）状态
     var FLOW_HOLD = 1200;    // 每趟跑完停留（毫秒）再循环
     var DASH_LEN = 11;       // 虚线单元长度（px）
     var DASH_GAP = 7;        // 虚线间隔（px）
@@ -171,6 +172,7 @@
 
     /** 重建所有覆盖物。model: { points: [...], lines: [{ color, path, realPath }], flowPath: [[lng,lat],...] } */
     function render(model) {
+        if (tourState) endFlowTour('aborted');
         lastModel = model || { points: [], lines: [] };
         if (!isReady()) return;
         clearOverlays();
@@ -255,6 +257,22 @@
         if (flowRaf || !flowDots.length) return;
         if (!flowEpoch) flowEpoch = window.performance.now();
         function frame(now) {
+            // 路线浏览模式：镜头跟随箭头从头跑到尾一遍（跑完回调结束）
+            if (tourState) {
+                if (tourState.start === null) tourState.start = now;
+                var tourDot = tourState.dot;
+                var tourFrac = Math.min((now - tourState.start) / tourState.totalMs, 1);
+                var tourPos = pointAlong(tourDot.path, tourDot.cum, tourFrac * tourDot.totalKm);
+                tourDot.marker.setPosition([tourPos.lng, tourPos.lat]);
+                tourDot.element.style.transform = 'rotate(' + tourPos.angle.toFixed(1) + 'deg)';
+                if (map) map.setCenter([tourPos.lng, tourPos.lat]);
+                if (tourFrac >= 1) {
+                    endFlowTour('done');
+                    return;
+                }
+                flowRaf = window.requestAnimationFrame(frame);
+                return;
+            }
             var elapsed = now - flowEpoch;
             for (var i = 0; i < flowDots.length; i++) {
                 var dot = flowDots[i];
@@ -274,6 +292,36 @@
             window.cancelAnimationFrame(flowRaf);
             flowRaf = null;
         }
+    }
+
+    /* ===== 路线浏览：跟随箭头把全程跑一遍 ===== */
+
+    /** 开始浏览：镜头跟随流动箭头从头跑到尾一趟。options.onEnd(reason) 结束时回调（done/stopped/aborted） */
+    function startFlowTour(options) {
+        if (!map || !flowDots.length) return false;
+        if (!flowRaf) startFlowLoop();
+        tourState = {
+            dot: flowDots[0],
+            start: null,
+            totalMs: Math.min(70000, Math.max(18000, flowDots[0].totalKm * 2600)),
+            onEnd: options && typeof options.onEnd === 'function' ? options.onEnd : null
+        };
+        if (map.getZoom() < 14) map.setZoom(14);
+        return true;
+    }
+
+    function endFlowTour(reason) {
+        if (!tourState) return;
+        var onEnd = tourState.onEnd;
+        tourState = null;
+        stopFlowLoop();   // 箭头停在当前位置，下一次 render 时恢复循环
+        if (onEnd) {
+            try { onEnd(reason); } catch (error) { /* 忽略回调异常 */ }
+        }
+    }
+
+    function stopFlowTour() {
+        endFlowTour('stopped');
     }
 
     /** 按累计弧长取路径插值点，同时给出该段行进方位角（度；0=正北，顺时针，与屏幕 rotate 一致） */
@@ -1200,6 +1248,8 @@
         searchPOI: searchPOI,
         flyTo: flyTo,
         previewLocation: previewLocation,
-        clearPreview: clearPreview
+        clearPreview: clearPreview,
+        startFlowTour: startFlowTour,
+        stopFlowTour: stopFlowTour
     };
 })();

@@ -16,8 +16,7 @@
     var pickNewOnly = false;
     var pickHadOpenModal = false;
     var pickSnapshot = null;
-    var playbackTimer = null;
-    var playingDayId = null;
+    var tourActive = false;
     var searchDebounce = null;
     var libFilter = { keyword: '', categoryId: 'all' };
     var mapReady = false;
@@ -383,8 +382,6 @@
         if (!document.activeElement || document.activeElement !== els.tripTitle) {
             els.tripTitle.value = Store.state.trip.title;
         }
-        if (playingDayId && playingDayId !== activeDayId) stopPlayback();
-
         renderDayTabs();
         renderDayMeta();
         renderItems();
@@ -616,6 +613,7 @@
     /* 真实路线（高德导航）缓存与查询：key = 方式 + 起终点坐标；值 = 结果对象或 null（无规划/失败） */
     var routeCache = {};
     var routePending = {};
+    var routeRetryCount = {};
 
     function routeFetchable(mode) {
         return mode === 'walk' || mode === 'bike' || mode === 'drive' || mode === 'taxi' ||
@@ -639,7 +637,16 @@
             .then(function (route) {
                 routeCache[key] = route || null;
                 delete routePending[key];
-                if (route) scheduleRouteRefresh();
+                if (route) {
+                    scheduleRouteRefresh();
+                } else if ((routeRetryCount[key] || 0) < 1) {
+                    // 偶发失败（限流/网络抖动）：清掉缓存并稍后重试一次
+                    routeRetryCount[key] = 1;
+                    window.setTimeout(function () {
+                        delete routeCache[key];
+                        scheduleRouteRefresh();
+                    }, 6000);
+                }
                 return routeCache[key];
             }, function () {
                 routeCache[key] = null;
@@ -1044,7 +1051,7 @@
     function setActiveDay(dayId) {
         if (!Store.getDay(dayId)) return;
         activeDayId = dayId;
-        stopPlayback();
+        stopTour();
         renderDayTabs();
         renderDayMeta();
         renderItems();
@@ -1600,54 +1607,44 @@
         });
     }
 
-    /* ================= 播放 ================= */
+    /* ================= 路线浏览（跟随箭头跑一遍） ================= */
 
     function togglePlayback() {
-        if (playbackTimer) {
-            stopPlayback();
+        if (tourActive) {
+            TripMap.stopFlowTour();
             return;
         }
-        var day = Store.getDay(activeDayId);
-        var items = day ? day.items.filter(function (item) { return !item.disabled; }) : [];
-        if (!items.length) {
-            toast('这一天还没有站点');
+        if (!TripMap.isReady()) {
+            toast('地图尚未就绪');
             return;
         }
-        items = items.slice();
-        playingDayId = day.id;
-        els.playDayBtn.textContent = '⏹ 停止';
-        els.playDayBtn.setAttribute('aria-pressed', 'true');
-
-        var index = 0;
-        function visitNext() {
-            if (playingDayId !== activeDayId) {
-                stopPlayback();
-                return;
+        var started = TripMap.startFlowTour({
+            onEnd: function (reason) {
+                tourActive = false;
+                updatePlayButton();
+                if (reason === 'done') {
+                    toast('路线浏览完成');
+                    if (TripMap.isReady()) TripMap.fitBounds(null);
+                }
             }
-            if (index >= items.length) {
-                stopPlayback();
-                return;
-            }
-            var place = Store.getPlace(items[index].placeId);
-            index += 1;
-            if (place) {
-                selectPlace(place.id, { focus: true });
-            }
-            playbackTimer = window.setTimeout(visitNext, 3000);
+        });
+        if (!started) {
+            toast('当前没有可浏览的路线');
+            return;
         }
-        visitNext();
+        tourActive = true;
+        updatePlayButton();
     }
 
-    function stopPlayback() {
-        if (playbackTimer) {
-            window.clearTimeout(playbackTimer);
-            playbackTimer = null;
-        }
-        playingDayId = null;
-        if (els.playDayBtn) {
-            els.playDayBtn.textContent = '▶ 浏览';
-            els.playDayBtn.setAttribute('aria-pressed', 'false');
-        }
+    function stopTour() {
+        if (!tourActive) return;
+        TripMap.stopFlowTour();
+    }
+
+    function updatePlayButton() {
+        if (!els.playDayBtn) return;
+        els.playDayBtn.textContent = tourActive ? '⏹ 停止' : '▶ 浏览';
+        els.playDayBtn.setAttribute('aria-pressed', tourActive ? 'true' : 'false');
     }
 
     function fitActiveDay() {
@@ -2226,7 +2223,7 @@
         Store.removeDay(day.id);
         els.dayModal.close();
         activeDayId = Store.state.days[0].id;
-        stopPlayback();
+        stopTour();
         renderAll();
         toast('已删除 ' + day.name);
     }
@@ -2462,7 +2459,7 @@
                 Store.importJSON(reader.result);
                 activeDayId = Store.state.days[0].id;
                 activePlaceId = null;
-                stopPlayback();
+                stopTour();
                 renderAll();
                 toast('导入成功');
             } catch (error) {
@@ -2479,7 +2476,7 @@
         Store.reset();
         activeDayId = Store.state.days[0].id;
         activePlaceId = null;
-        stopPlayback();
+        stopTour();
         renderAll();
         toast('已清空，一切从零开始');
     }
