@@ -10,6 +10,7 @@ var StoreModule = require('../../utils/store.js');
 var Store = StoreModule.Store;
 var Routes = require('../../utils/routes.js');
 var Fmt = require('../../utils/format.js');
+var amap = require('../../utils/amap.js');
 
 var CATEGORY_ICONS = {
     transport: 'marker-teal',
@@ -514,7 +515,7 @@ Page({
             tripTitle: Store.state.trip.title,
             tripNote: Store.state.trip.note || '',
             amapKey: settings.amapKey || '',
-            keyMissing: !(settings.amapKey || '').trim(),
+            keyMissing: !amap.keyReady(),
             satellite: satellite,
             view3D: view3D,
             mapSetting: {
@@ -999,9 +1000,12 @@ Page({
         var self = this;
         var key = (this.data.amapKey || '').trim();
         Store.updateSettings({ amapKey: key });
-        this.setData({ keyMissing: !key });
+        this.setData({ keyMissing: !amap.keyReady() });
         if (!key) {
-            wx.showToast({ title: '已清空 Key', icon: 'none' });
+            wx.showToast({
+                title: amap.keyReady() ? '已清空手动填写（仍使用内置 Key）' : '已清空 Key',
+                icon: 'none'
+            });
             return;
         }
         wx.showToast({ title: '已保存，正在获取路线…', icon: 'none' });

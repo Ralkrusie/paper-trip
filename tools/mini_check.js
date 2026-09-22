@@ -113,5 +113,19 @@ files.filter(function (f) { return f.endsWith('.wxml'); }).forEach(function (f) 
     }
 });
 
+/* ---------- 6. 内置 Key 泄露提醒（不阻断） ---------- */
+try {
+    var configFile = path.join(ROOT, 'utils', 'config.js');
+    if (fs.existsSync(configFile)) {
+        var keyMatch = /AMAP_KEY\s*:\s*['"]([^'"]*)['"]/.exec(fs.readFileSync(configFile, 'utf8'));
+        if (keyMatch && keyMatch[1].trim()) {
+            console.log('[提醒] utils/config.js 里有非空内置 Key（' + keyMatch[1].trim().slice(0, 4) +
+                '****）：本仓库是公开仓库，提交前务必清空！');
+        }
+    }
+} catch (error) {
+    console.log('[提醒] 检查内置 Key 失败：' + error.message);
+}
+
 console.log('\n完成：' + (problems ? problems + ' 个问题待处理' : '未发现问题'));
 process.exit(problems ? 1 : 0);

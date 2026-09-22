@@ -4,7 +4,8 @@
  * 与网页版区别：网页版用高德 JS API（地图内置），小程序里改用 Web 服务 REST 接口，
  * 由 wx.request 直接请求 restapi.amap.com；底图展示由微信 map 组件（腾讯底图）负责。
  *
- * 使用前：在高德开放平台新建一个「Web 服务」类型的 Key，填入小程序「设置」里。
+ * 使用前：在高德开放平台新建一个「Web 服务」类型的 Key，填入小程序「设置」里，
+ *         或填到 utils/config.js 作为内置 Key（正式分发用，详见 README「Key 的三种用法」）。
  * 开发时需在开发者工具「详情 → 本地设置」勾选「不校验合法域名」；
  * 正式发布需在公众平台把 https://restapi.amap.com 加入 request 合法域名。
  */
@@ -12,9 +13,16 @@
     'use strict';
 
     var Store = require('./store.js').Store;
+    var Config = require('./config.js');
 
+    /**
+     * 取当前生效的 Key：用户「设置」页手动填写的优先；未填写时用 config.js 的内置 Key。
+     * 内置 Key 供正式分发（用户零配置）；本地填写即可，不要提交到公开仓库。
+     */
     function getKey() {
-        return ((Store.state && Store.state.settings && Store.state.settings.amapKey) || '').trim();
+        var manual = (Store.state && Store.state.settings && Store.state.settings.amapKey) || '';
+        if (String(manual).trim()) return String(manual).trim();
+        return String(Config.AMAP_KEY || '').trim();
     }
 
     function keyReady() {

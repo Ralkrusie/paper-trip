@@ -160,7 +160,7 @@
                 <view class="divider"></view>
 
                 <view class="field">
-                    <text class="field-label">高德「Web 服务」Key（真实路线用）</text>
+                    <text class="field-label">高德「Web 服务」Key（真实路线用；留空则用内置 Key）</text>
                     <input class="input" value="{{amapKey}}" bindinput="onAmapKey"
                         placeholder="在高德开放平台新建 Web 服务类型 Key 后粘贴到这里" />
                 </view>
