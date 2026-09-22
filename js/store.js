@@ -41,9 +41,11 @@
     };
 
     /** 通勤方式与估算速度（米/分钟）；extra 为固定附加时间（分钟，如候车/进出站） */
-    var LEG_MODES = ['walk', 'bike', 'drive', 'taxi', 'bus', 'metro', 'rail', 'other'];
-    var LEG_SPEED = { walk: 78, bike: 210, drive: 360, taxi: 360, bus: 280, metro: 550, rail: 800 };
-    var LEG_EXTRA = { bus: 7, metro: 10, rail: 12 };
+    var LEG_MODES = ['walk', 'bike', 'drive', 'taxi', 'transit', 'rail', 'other'];
+    var LEG_SPEED = { walk: 78, bike: 210, drive: 360, taxi: 360, transit: 450, rail: 800 };
+    var LEG_EXTRA = { transit: 10, rail: 12 };
+    /** 旧数据里「公交 / 地铁」是两个模式；高德实际只有一类「公交换乘」规划，统一迁到 transit */
+    var LEGACY_LEG_MODE = { bus: 'transit', metro: 'transit' };
     /** 绕路系数：直线距离 → 实际路程（道路绕行，约 1.3 倍） */
     var LEG_DETOUR = 1.3;
 
@@ -175,6 +177,12 @@
         return Math.round(n * 100) / 100;
     }
 
+    function normalizeLegMode(mode) {
+        var raw = String(mode || '');
+        if (LEGACY_LEG_MODE[raw]) return LEGACY_LEG_MODE[raw];
+        return LEG_MODES.indexOf(raw) !== -1 ? raw : '';
+    }
+
     function normalizeItem(raw) {
         if (!raw || typeof raw !== 'object' || typeof raw.placeId !== 'string') return null;
         var rawLeg = raw.leg && typeof raw.leg === 'object' ? raw.leg : {};
@@ -187,7 +195,7 @@
             note: String(raw.note || ''),
             disabled: raw.disabled === true,
             leg: {
-                mode: LEG_MODES.indexOf(rawLeg.mode) !== -1 ? rawLeg.mode : '',
+                mode: normalizeLegMode(rawLeg.mode),
                 note: String(rawLeg.note || '')
             }
         };
@@ -458,7 +466,7 @@
             if (patch.disabled !== undefined) item.disabled = Boolean(patch.disabled);
             if (patch.leg !== undefined && patch.leg !== null) {
                 if (patch.leg.mode !== undefined) {
-                    item.leg.mode = LEG_MODES.indexOf(patch.leg.mode) !== -1 ? patch.leg.mode : '';
+                    item.leg.mode = normalizeLegMode(patch.leg.mode);
                 }
                 if (patch.leg.note !== undefined) item.leg.note = String(patch.leg.note || '');
             }

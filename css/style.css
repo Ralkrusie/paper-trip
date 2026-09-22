@@ -537,15 +537,15 @@ img {
 
 .mode-chip {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   justify-content: center;
-  padding: 8px 6px;
+  padding: 8px 2px;
   border: 1px solid var(--stone);
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
   transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out), color 160ms var(--ease-out);
 }
 

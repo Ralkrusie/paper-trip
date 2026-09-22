@@ -768,7 +768,7 @@
         if (mode === 'walk') return 'AMap.Walking';
         if (mode === 'bike') return 'AMap.Riding';
         if (mode === 'drive' || mode === 'taxi') return 'AMap.Driving';
-        if (mode === 'bus' || mode === 'metro') return 'AMap.Transfer';
+        if (mode === 'transit' || mode === 'bus' || mode === 'metro') return 'AMap.Transfer';
         return null;
     }
 
@@ -875,36 +875,32 @@
         });
     }
 
-    /** 公交换乘结果 → 完整换乘链（多段公交/地铁全部收集，上车站取首段、下车站取末段） */
+    /** 公交换乘结果 → 每段乘车明细（线路 + 上车站 → 下车站，多段即换乘） */
     function parseTransferRoute(status, result) {
         if (status !== 'complete' || !result || !result.plans || !result.plans.length) return null;
         var plan = result.plans[0];
         var segments = plan.segments || [];
-        var lines = [];
-        var fromStation = '';
-        var toStation = '';
+        var rides = [];
         for (var i = 0; i < segments.length; i++) {
             var transit = segments[i] && segments[i].transit;
             if (!transit || !transit.lines || !transit.lines.length) continue;
-            for (var j = 0; j < transit.lines.length; j++) {
-                // 去掉线路名里的方向后缀，如「地铁1号线(莘庄--富锦路)」→「地铁1号线」
-                var name = String(transit.lines[j].name || '').replace(/[（(].*$/, '').trim();
-                if (name && lines.indexOf(name) === -1) lines.push(name);
-            }
-            var on = stopName(transit.on_station);
-            if (!fromStation && on) fromStation = on;
-            var off = stopName(transit.off_station);
-            if (off) toStation = off;
+            // 去掉线路名里的方向后缀，如「地铁1号线(莘庄--富锦路)」→「地铁1号线」
+            var name = String(transit.lines[0].name || '').replace(/[（(].*$/, '').trim();
+            if (!name) continue;
+            rides.push({
+                line: name,
+                from: stopName(transit.on_station),
+                to: stopName(transit.off_station)
+            });
         }
-        if (!lines.length) return null;
+        if (!rides.length) return null;
         return {
             time: Number(plan.time) || null,
             distance: Number(plan.distance) || null,
             walking: Number(plan.walking_distance) || 0,
-            cost: plan.cost !== undefined && plan.cost !== null && Number(plan.cost) > 0 ? Number(plan.cost) : null,
-            lines: lines,
-            from: fromStation,
-            to: toStation
+            rides: rides,
+            from: rides[0].from,
+            to: rides[rides.length - 1].to
         };
     }
 

@@ -27,8 +27,8 @@
     var legContext = null;
     var touchDrag = null;
 
-    var LEG_MODE_LABELS = { walk: '步行', bike: '骑行', drive: '驾驶', taxi: '出租', bus: '公交', metro: '地铁', rail: '动车', other: '其他' };
-    var LEG_MODE_ORDER = ['walk', 'bike', 'drive', 'taxi', 'bus', 'metro', 'rail', 'other'];
+    var LEG_MODE_LABELS = { walk: '步行', bike: '骑行', drive: '驾驶', taxi: '出租', transit: '公交/地铁', rail: '动车', other: '其他' };
+    var LEG_MODE_ORDER = ['walk', 'bike', 'drive', 'taxi', 'transit', 'rail', 'other'];
 
     /* 按钮图标（线性描边，跟字体颜色联动） */
     var ICON_PENCIL = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
@@ -63,15 +63,7 @@
             '<circle cx="16.8" cy="15.8" r="1.8"/>' +
             '<rect x="10" y="7.2" width="4" height="2.2" rx="0.7"/>' +
             '</svg>',
-        bus: '<svg ' + MODE_SVG_ATTRS + '>' +
-            '<rect x="5.6" y="4.2" width="12.8" height="13.2" rx="2.6"/>' +
-            '<path d="M5.6 11.6h12.8"/>' +
-            '<path d="M9.4 4.2v7.4M14.6 4.2v7.4"/>' +
-            '<circle cx="8.7" cy="14.4" r="0.9"/>' +
-            '<circle cx="15.3" cy="14.4" r="0.9"/>' +
-            '<path d="M8.2 17.4L7 20.6M15.8 17.4L17 20.6"/>' +
-            '</svg>',
-        metro: '<svg ' + MODE_SVG_ATTRS + '>' +
+        transit: '<svg ' + MODE_SVG_ATTRS + '>' +
             '<rect x="5.8" y="3.6" width="12.4" height="14" rx="3.2"/>' +
             '<path d="M8.6 6.6h6.8"/>' +
             '<path d="M8.6 9.8h6.8"/>' +
@@ -634,7 +626,7 @@
 
     function routeFetchable(mode) {
         return mode === 'walk' || mode === 'bike' || mode === 'drive' || mode === 'taxi' ||
-            mode === 'bus' || mode === 'metro';
+            mode === 'transit';
     }
 
     function routeKey(mode, fromPlace, toPlace) {
@@ -672,16 +664,22 @@
         return Math.max(1, Math.round(seconds / 60));
     }
 
-    function routeFare(cost) {
-        return '¥' + (Math.round(cost * 100) / 100);
-    }
-
-    /** 通勤行里的路线细节：公交/地铁显示完整换乘链+上下车站+票价，其余显示真实里程 */
+    /** 通勤行里的路线细节：公交/地铁显示换乘链（含换乘站）+ 首末站，其余显示真实里程 */
     function routeRowDetail(route) {
-        if (route.lines && route.lines.length) {
-            var text = route.lines.join(' → ');
-            if (route.from && route.to) text += ' · ' + route.from + ' → ' + route.to;
-            if (route.cost) text += ' · ' + routeFare(route.cost);
+        if (route.rides && route.rides.length) {
+            var first = route.rides[0];
+            var last = route.rides[route.rides.length - 1];
+            if (route.rides.length === 1) {
+                return first.line + (first.from && first.to ? ' · ' + first.from + ' → ' + first.to : '');
+            }
+            var names = route.rides.map(function (ride) { return ride.line; }).join(' → ');
+            var transfers = [];
+            for (var i = 1; i < route.rides.length; i++) {
+                var point = route.rides[i].from || route.rides[i - 1].to;
+                if (point && transfers.indexOf(point) === -1) transfers.push(point);
+            }
+            var text = names + (transfers.length ? '（' + transfers.join('、') + '换乘）' : '');
+            if (first.from && last.to) text += ' · ' + first.from + ' → ' + last.to;
             return text;
         }
         if (route.distance) return routeKm(route.distance);
@@ -2110,16 +2108,16 @@
         return text;
     }
 
-    /** 弹窗里的高德真实路线说明 */
+    /** 弹窗里的高德真实路线说明（每段乘车含上/下车站，换乘点一目了然） */
     function modalRouteText(route) {
         var parts = [];
         if (route.time) parts.push('约 ' + routeMinutes(route.time) + ' 分');
-        if (route.lines && route.lines.length) {
-            var chain = route.lines.join(' → ');
-            if (route.from && route.to) chain += ' · ' + route.from + ' → ' + route.to;
+        if (route.rides && route.rides.length) {
+            var chain = route.rides.map(function (ride) {
+                return ride.line + (ride.from && ride.to ? '（' + ride.from + ' → ' + ride.to + '）' : '');
+            }).join(' → ');
             parts.push(chain);
             if (route.walking) parts.push('步行约 ' + routeKm(route.walking));
-            if (route.cost) parts.push(routeFare(route.cost));
         } else if (route.distance) {
             parts.push(routeKm(route.distance));
         }
