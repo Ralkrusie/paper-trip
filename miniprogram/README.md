@@ -111,6 +111,14 @@ node tools/mini_check.js
 & "D:\Development\微信web开发者工具\node-18.exe" tools\mini_check.js
 ```
 
+另有**路线解析自检**：用真实接口快照，在不进开发者工具的情况下验证 `routes.js` 的完整解析链路（换乘链、轨迹点、四种方式全覆盖）：
+
+```bash
+node tools/mini_routes_selftest.js <fixtures目录>
+```
+
+快照的生成方法见脚本头注释（快照放临时目录、不入库）。
+
 ## 已知差异与后续优化
 
 - **底图**：微信 `map` 组件底图为腾讯提供（GCJ-02 坐标系，与高德路线叠加一致）；

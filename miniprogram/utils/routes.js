@@ -86,8 +86,7 @@
                 .then(function (data) { return parseSimple(data); });
         }
         if (mode === 'bike') {
-            return amap.http('direction/bicycling', { origin: origin, destination: destination })
-                .then(function (data) { return parseSimple(data); });
+            return bikeRoute(origin, destination);
         }
         if (mode === 'drive' || mode === 'taxi') {
             return amap.http('direction/driving', { origin: origin, destination: destination })
@@ -124,12 +123,21 @@
         });
     }
 
-    /** 步行 / 骑行 / 驾车结果 → 时长、距离与沿路轨迹 */
-    function parseSimple(data) {
-        var route = data && data.route;
-        var paths = (route && route.paths) || [];
-        if (!paths.length) return null;
-        var path = paths[0];
+    /**
+     * 骑行路径规划：v3 已停用（SERVICE_NOT_AVAILABLE）、v5 只有文字指引没有轨迹点，
+     * 改用 v4（实测 errcode=0，data.paths[0].steps[].polyline 与 v3 一致）【2026-09 实测】
+     */
+    function bikeRoute(origin, destination) {
+        return amap.http4('direction/bicycling', { origin: origin, destination: destination })
+            .then(function (data) {
+                var paths = (data && data.data && data.data.paths) || [];
+                if (!paths.length) return null;
+                return pathToRoute(paths[0]);
+            });
+    }
+
+    /** 单个 path → 统一路线结果（time/distance/轨迹点） */
+    function pathToRoute(path) {
         var points = [];
         (path.steps || []).forEach(function (step) {
             if (step && step.polyline) points = points.concat(parsePolyline(step.polyline));
@@ -145,12 +153,26 @@
         };
     }
 
+    /** v3 路径规划（步行 / 驾车）结果 → 时长、距离与沿路轨迹 */
+    function parseSimple(data) {
+        var route = data && data.route;
+        var paths = (route && route.paths) || [];
+        if (!paths.length) return null;
+        return pathToRoute(paths[0]);
+    }
+
     /** 公交换乘结果 → 每段乘车明细（线路 + 上车站 → 下车站，多段即换乘）+ 全程真实轨迹 */
     function parseTransfer(data) {
         var route = data && data.route;
         var transits = (route && route.transits) || [];
         if (!transits.length) return null;
+        // 选「总耗时最短」的方案：REST 首条方案按推荐排序、未必最快（2026-09 实测首条 61 分、另有 43 分方案）
         var plan = transits[0];
+        transits.forEach(function (candidate) {
+            var candidateTime = Number(candidate.duration) || 0;
+            var planTime = Number(plan.duration) || 0;
+            if (candidateTime && (!planTime || candidateTime < planTime)) plan = candidate;
+        });
         var segments = plan.segments || [];
         var rides = [];
         var points = [];
@@ -172,7 +194,9 @@
                     from: stopName(line.departure_stop),
                     to: stopName(line.arrival_stop)
                 };
-            } else if (segment.railway) {
+            } else if (segment.railway && (segment.railway.name || segment.railway.trip || segment.railway.departure_stop)) {
+                // ⚠ 无铁路时高德也会返回 railway:{via_stops:[],alters:[],spaces:[]} 空壳对象，
+                // 必须用具体字段判断，否则会凭空多出一段「铁路」（2026-09 实测）
                 ride = {
                     line: cleanLineName(segment.railway.name || segment.railway.trip || '铁路'),
                     from: stopName(segment.railway.departure_stop),

@@ -35,23 +35,9 @@
         return String(value === undefined || value === null ? '' : value);
     }
 
-    /** 发起一次 REST 请求；失败（网络/配额/无数据）统一 resolve(null)，由上层降级 */
-    function http(path, params) {
+    /** 底层 GET：把 URL 请求成 JSON 对象；网络失败/解析失败返回 null */
+    function requestJson(url) {
         return new Promise(function (resolve) {
-            var key = getKey();
-            if (!key) {
-                resolve(null);
-                return;
-            }
-            var query = [];
-            Object.keys(params || {}).forEach(function (name) {
-                var value = params[name];
-                if (value === undefined || value === null) return;
-                query.push(name + '=' + encodeURIComponent(value));
-            });
-            query.push('key=' + encodeURIComponent(key));
-            var url = 'https://restapi.amap.com/v3/' + path + '?' + query.join('&');
-
             wx.request({
                 url: url,
                 method: 'GET',
@@ -61,14 +47,44 @@
                     if (typeof data === 'string') {
                         try { data = JSON.parse(data); } catch (e) { data = null; }
                     }
-                    if (!data || data.status !== '1') {
-                        resolve(null);
-                        return;
-                    }
-                    resolve(data);
+                    resolve(data || null);
                 },
                 fail: function () { resolve(null); }
             });
+        });
+    }
+
+    /** 拼 REST 地址（key 追加在最后） */
+    function buildUrl(version, path, params) {
+        var query = [];
+        Object.keys(params || {}).forEach(function (name) {
+            var value = params[name];
+            if (value === undefined || value === null) return;
+            query.push(name + '=' + encodeURIComponent(value));
+        });
+        query.push('key=' + encodeURIComponent(getKey()));
+        return 'https://restapi.amap.com/' + version + '/' + path + '?' + query.join('&');
+    }
+
+    /**
+     * v3 / v5 服务请求（成功判定 status==='1'）；失败（网络/配额/无数据）统一 resolve(null)，由上层降级。
+     * version 默认 v3。
+     */
+    function http(path, params, version) {
+        if (!getKey()) return Promise.resolve(null);
+        return requestJson(buildUrl(version || 'v3', path, params)).then(function (data) {
+            return data && data.status === '1' ? data : null;
+        });
+    }
+
+    /**
+     * v4 服务请求（成功判定 errcode===0，业务数据在 data 字段下）。
+     * 用于骑行路径规划：v3 已停用、v5 无轨迹点，只有 v4 提供 steps[].polyline【2026-09 实测】。
+     */
+    function http4(path, params) {
+        if (!getKey()) return Promise.resolve(null);
+        return requestJson(buildUrl('v4', path, params)).then(function (data) {
+            return data && Number(data.errcode) === 0 ? data : null;
         });
     }
 
@@ -128,6 +144,7 @@
         keyReady: keyReady,
         strOf: strOf,
         http: http,
+        http4: http4,
         regeo: regeo,
         cityOf: cityOf,
         searchPoi: searchPoi
