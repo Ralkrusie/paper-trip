@@ -27,8 +27,8 @@
     var legContext = null;
     var touchDrag = null;
 
-    var LEG_MODE_LABELS = { walk: '步行', bike: '骑行', drive: '驾驶', taxi: '出租', transit: '公交/地铁', rail: '动车', other: '其他' };
-    var LEG_MODE_ORDER = ['walk', 'bike', 'drive', 'taxi', 'transit', 'rail', 'other'];
+    var LEG_MODE_LABELS = { walk: '步行', bike: '骑行', drive: '驾车', taxi: '打车', transit: '公共交通', other: '其他' };
+    var LEG_MODE_ORDER = ['walk', 'bike', 'drive', 'taxi', 'transit', 'other'];
 
     /* 按钮图标（线性描边，跟字体颜色联动） */
     var ICON_PENCIL = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
@@ -70,13 +70,6 @@
             '<circle cx="8.9" cy="13.6" r="0.9"/>' +
             '<circle cx="15.1" cy="13.6" r="0.9"/>' +
             '<path d="M8.6 17.6L7.4 20.6M15.4 17.6L16.6 20.6"/>' +
-            '</svg>',
-        rail: '<svg ' + MODE_SVG_ATTRS + '>' +
-            '<path d="M6.2 20.4c-1.4-2-2-4.3-2-6.9V9.8c0-3.6 3-5.8 7.8-5.8s7.8 2.2 7.8 5.8v3.7c0 2.6-.6 4.9-2 6.9z"/>' +
-            '<path d="M4.2 12.9h15.6"/>' +
-            '<path d="M8.4 7.3c.8-.9 2-1.4 3.6-1.4s2.8.5 3.6 1.4"/>' +
-            '<circle cx="8.8" cy="15.6" r="0.9"/>' +
-            '<circle cx="15.2" cy="15.6" r="0.9"/>' +
             '</svg>',
         other: '<svg ' + MODE_SVG_ATTRS + '>' +
             '<circle cx="5.8" cy="12" r="1.4" fill="currentColor" stroke="none"/>' +
@@ -664,7 +657,7 @@
         return Math.max(1, Math.round(seconds / 60));
     }
 
-    /** 通勤行里的路线细节：公交/地铁显示换乘链（含换乘站）+ 首末站，其余显示真实里程 */
+    /** 通勤行里的路线细节：公共交通显示换乘链（含换乘站）+ 首末站，其余显示真实里程 */
     function routeRowDetail(route) {
         if (route.rides && route.rides.length) {
             var first = route.rides[0];

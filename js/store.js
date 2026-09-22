@@ -41,11 +41,11 @@
     };
 
     /** 通勤方式与估算速度（米/分钟）；extra 为固定附加时间（分钟，如候车/进出站） */
-    var LEG_MODES = ['walk', 'bike', 'drive', 'taxi', 'transit', 'rail', 'other'];
-    var LEG_SPEED = { walk: 78, bike: 210, drive: 360, taxi: 360, transit: 450, rail: 800 };
-    var LEG_EXTRA = { transit: 10, rail: 12 };
-    /** 旧数据里「公交 / 地铁」是两个模式；高德实际只有一类「公交换乘」规划，统一迁到 transit */
-    var LEGACY_LEG_MODE = { bus: 'transit', metro: 'transit' };
+    var LEG_MODES = ['walk', 'bike', 'drive', 'taxi', 'transit', 'other'];
+    var LEG_SPEED = { walk: 78, bike: 210, drive: 360, taxi: 360, transit: 450 };
+    var LEG_EXTRA = { transit: 10 };
+    /** 旧数据迁移：公交/地铁合并为「公共交通」transit；已移除的「动车」并入「其他」（班次信息写备注） */
+    var LEGACY_LEG_MODE = { bus: 'transit', metro: 'transit', rail: 'other' };
     /** 绕路系数：直线距离 → 实际路程（道路绕行，约 1.3 倍） */
     var LEG_DETOUR = 1.3;
 
@@ -93,7 +93,7 @@
 
     /**
      * 估算通勤时长（分钟）。
-     * mode 为空时按距离自动在步行/驾驶间选择；「其他」不估算，返回 null；
+     * mode 为空时按距离自动在步行/驾车间选择；「其他」不估算，返回 null；
      * 直线距离先乘绕路系数再按均速计算，结果取 5 分钟整并至少 1 分钟。
      */
     function estimateLegMinutes(mode, km) {
