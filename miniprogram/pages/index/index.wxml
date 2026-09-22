@@ -71,7 +71,7 @@
                             <text class="leg-text">{{item.text}}</text>
                         </view>
                         <view wx:else class="item-row {{item.late ? 'is-late' : ''}} {{item.active ? 'is-active' : ''}}"
-                            data-id="{{item.id}}" bindtap="onItemTap">
+                            data-id="{{item.id}}" bindtap="onItemTap" bindlongpress="onItemLongPress">
                             <view class="badge" style="background: {{item.color}}">{{item.badge}}</view>
                             <view class="item-main">
                                 <view class="item-title">{{item.name}}</view>
@@ -92,6 +92,7 @@
                 <view wx:if="{{rows.length === 0}}" class="empty">
                     这一天还没有安排。去「地点」把地点加入这一天，或点地图添加。
                 </view>
+                <view wx:if="{{rows.length}}" class="list-hint">长按卡片：上移 / 下移 / 移动到其它天</view>
 
                 <block wx:if="{{disabledRows.length}}">
                     <view class="section-label">已移除 {{disabledRows.length}} 项 · 可恢复或删除</view>
@@ -207,13 +208,13 @@
         </scroll-view>
     </view>
 
-    <!-- 加入某天 弹层 -->
+    <!-- 加入某天 / 移动到某天 弹层 -->
     <view wx:if="{{dayPicker.open}}" class="popup-mask" bindtap="closeDayPicker">
         <view class="popup" catchtap="noop">
-            <view class="popup-title">把「{{dayPicker.placeName}}」加入哪一天？</view>
+            <view class="popup-title">{{dayPicker.title}}</view>
             <view class="popup-row" wx:for="{{dayPicker.days}}" wx:key="id" data-id="{{item.id}}"
                 bindtap="onDayPickerPick">{{item.label}}</view>
-            <view class="popup-row is-new" bindtap="onDayPickerNew">＋ 新建一天并添加</view>
+            <view wx:if="{{dayPicker.mode !== 'move'}}" class="popup-row is-new" bindtap="onDayPickerNew">＋ 新建一天并添加</view>
             <view class="popup-cancel" bindtap="closeDayPicker">取消</view>
         </view>
     </view>

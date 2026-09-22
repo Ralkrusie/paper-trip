@@ -134,7 +134,7 @@ Page({
         // 弹层
         dayEdit: { open: false, dayId: '', name: '', date: '' },
         canDeleteDay: false,
-        dayPicker: { open: false, placeId: '', placeName: '', days: [] },
+        dayPicker: { open: false, mode: 'add', itemId: '', placeId: '', placeName: '', title: '', days: [] },
         today: ''
     },
 
@@ -142,7 +142,8 @@ Page({
         this._markerMap = {};       // markerId -> placeId
         this._flow = null;
         this._timer = null;
-        this._epoch = 0;
+        this._flowTimer = null;     // 流动动画「跑完等待再循环」的定时器
+        this._mapCtx = null;        // MapContext（moveAlong 用）
         this._tourStart = null;
         this._tourMs = 0;
         this._refreshTimer = null;
@@ -173,15 +174,25 @@ Page({
         this.startFlowTimer();
     },
 
+    onReady: function () {
+        // 流动箭头改用 map 原生 moveAlong 平滑动画（需 MapContext，基础库 2.13+）
+        this._mapCtx = wx.createMapContext('trip-map', this);
+        this.startFlowAnimation();
+    },
+
     onShow: function () {
         this.refreshAll();
         this.startFlowTimer();
     },
 
-    onHide: function () { this.stopFlowTimer(); },
+    onHide: function () {
+        this.stopFlowTimer();
+        this.stopFlowAnimation();
+    },
     onUnload: function () {
         this._destroyed = true;
         this.stopFlowTimer();
+        this.stopFlowAnimation();
     },
 
     onShareAppMessage: function () {
@@ -313,6 +324,7 @@ Page({
 
     refreshMap: function () {
         var self = this;
+        this.stopFlowAnimation();
         if (this.data.touring) this.setData({ touring: false });
 
         var model = this.buildMapModel();
@@ -331,8 +343,6 @@ Page({
                 rotate: 0,
                 zIndex: 99
             });
-        } else {
-            this._epoch = 0;
         }
 
         this._markerMap = {};
@@ -381,6 +391,9 @@ Page({
             polylines: polylines,
             hasFlow: Boolean(this._flow),
             hasPlaces: model.points.length > 0
+        }, function () {
+            // markers 渲染完成后再发起动画（markerId 0 必须已存在）
+            self.startFlowAnimation();
         });
     },
 
@@ -573,35 +586,59 @@ Page({
         }
     },
 
+    /**
+     * 流动箭头动画：用 map 原生 moveAlong（基础库 2.13+）沿全程路径平滑移动，autoRotate 自动转向。
+     * 循环 = 动画跑完（时长已知）后等 FLOW_HOLD 再发起下一趟；浏览模式下镜头照旧由 120ms 定时器跟随。
+     * 相比逐帧 setData 挪 marker，原生动画与屏幕刷新率一致，观感顺滑且不占 setData 通道。
+     */
+    startFlowAnimation: function () {
+        var flow = this._flow;
+        if (!flow || !this._mapCtx || !this.data.hasFlow) return;
+        this.stopFlowAnimation();
+        var self = this;
+        var duration = this.data.touring ? this._tourMs : flow.totalMs;
+        var path = Fmt.reducePath(flow.path, 400).map(function (pair) {
+            return { longitude: pair[0], latitude: pair[1] };
+        });
+        if (this.data.touring) this._tourStart = Date.now();
+        try {
+            this._mapCtx.moveAlong({
+                markerId: 0,
+                path: path,
+                duration: duration,
+                autoRotate: true,
+                success: function () { },
+                fail: function () { }
+            });
+        } catch (error) {
+            console.error('[flow] moveAlong 调用失败：', error);
+        }
+        if (!this.data.touring) {
+            // 一趟跑完后停 FLOW_HOLD 再循环
+            this._flowTimer = setTimeout(function () {
+                self._flowTimer = null;
+                if (!self._destroyed && !self.data.touring) self.startFlowAnimation();
+            }, duration + FLOW_HOLD);
+        }
+    },
+
+    stopFlowAnimation: function () {
+        if (this._flowTimer) {
+            clearTimeout(this._flowTimer);
+            this._flowTimer = null;
+        }
+    },
+
+    /** 定时器仅负责「浏览模式」的镜头跟随（120ms 一跳，避免高频 setData） */
     tick: function () {
         var flow = this._flow;
-        if (!flow || !this.data.hasFlow) return;
-
+        if (!flow || !this.data.hasFlow || !this.data.touring) return;
         var now = Date.now();
-        if (this.data.touring) {
-            if (this._tourStart === null) this._tourStart = now;
-            var frac = Math.min((now - this._tourStart) / this._tourMs, 1);
-            var pos = pointAlong(flow, frac * flow.totalKm);
-            this.setData({
-                'markers[0].longitude': pos.lng,
-                'markers[0].latitude': pos.lat,
-                'markers[0].rotate': pos.angle,
-                mapCenter: { longitude: pos.lng, latitude: pos.lat }
-            });
-            if (frac >= 1) this.endTour('done');
-            return;
-        }
-
-        if (!this._epoch) this._epoch = now;
-        var elapsed = now - this._epoch;
-        var cycleMs = flow.totalMs + FLOW_HOLD;
-        var loopFrac = Math.min((elapsed % cycleMs) / flow.totalMs, 1);
-        var loopPos = pointAlong(flow, loopFrac * flow.totalKm);
-        this.setData({
-            'markers[0].longitude': loopPos.lng,
-            'markers[0].latitude': loopPos.lat,
-            'markers[0].rotate': loopPos.angle
-        });
+        if (this._tourStart === null) this._tourStart = now;
+        var frac = Math.min((now - this._tourStart) / this._tourMs, 1);
+        var pos = pointAlong(flow, frac * flow.totalKm);
+        this.setData({ mapCenter: { longitude: pos.lng, latitude: pos.lat } });
+        if (frac >= 1) this.endTour('done');
     },
 
     toggleTour: function () {
@@ -613,20 +650,26 @@ Page({
             wx.showToast({ title: '当前没有可浏览的路线', icon: 'none' });
             return;
         }
-        this._tourStart = null;
         this._tourMs = this._flow.tourMs;
         var update = { touring: true };
         if (this.data.mapScale < 14) update.mapScale = 14;
-        this.setData(update);
+        var self = this;
+        this.setData(update, function () {
+            self._tourStart = null;
+            self.startFlowAnimation();
+        });
     },
 
     endTour: function (reason) {
         if (!this.data.touring) return;
-        this.setData({ touring: false });
-        if (reason === 'done') {
-            wx.showToast({ title: '路线浏览完成', icon: 'none' });
-            this.fitAll();
-        }
+        var self = this;
+        this.setData({ touring: false }, function () {
+            if (reason === 'done') {
+                wx.showToast({ title: '路线浏览完成', icon: 'none' });
+                self.fitAll();
+            }
+            self.startFlowAnimation();   // 恢复常速循环
+        });
     },
 
     /* ================= 地图交互 ================= */
@@ -853,6 +896,65 @@ Page({
         if (id) wx.navigateTo({ url: '/pages/item/item?id=' + id + '&focus=leg' });
     },
 
+    /* ================= 排序（长按卡片） ================= */
+
+    onItemLongPress: function (event) {
+        var self = this;
+        var id = event.currentTarget.dataset.id;
+        if (!id || !Store.findItem(id)) return;
+        wx.showActionSheet({
+            itemList: ['上移一位', '下移一位', '移动到某天…'],
+            itemColor: '#1e302c',
+            success: function (res) {
+                if (res.tapIndex === 0) self.moveItemBy(id, -1);
+                else if (res.tapIndex === 1) self.moveItemBy(id, 1);
+                else if (res.tapIndex === 2) self.openItemMovePicker(id);
+            }
+        });
+    },
+
+    /** 天内上移 / 下移一位（跳过已移除项，与可见顺序一致） */
+    moveItemBy: function (itemId, direction) {
+        var found = Store.findItem(itemId);
+        if (!found) return;
+        var day = found.day;
+        var actives = day.items.filter(function (item) { return !item.disabled; });
+        var position = actives.indexOf(found.item);
+        var neighbor = actives[position + direction];
+        if (!neighbor) {
+            wx.showToast({ title: direction < 0 ? '已经在最前了' : '已经在最后了', icon: 'none' });
+            return;
+        }
+        // moveItem 语义：目标天「移除该项之后」的插入位置 —— 用邻居的原始下标即可与邻居交换
+        Store.moveItem(itemId, day.id, day.items.indexOf(neighbor));
+        this.refreshItinerary();
+        this.refreshMap();
+    },
+
+    /** 「移动到某天」选择（复用 dayPicker 弹层） */
+    openItemMovePicker: function (itemId) {
+        var found = Store.findItem(itemId);
+        if (!found) return;
+        var place = Store.getPlace(found.item.placeId);
+        var name = place ? place.name : '该站点';
+        this.setData({
+            dayPicker: {
+                open: true,
+                mode: 'move',
+                itemId: itemId,
+                placeId: '',
+                placeName: name,
+                title: '把「' + name + '」移动到哪一天？',
+                days: Store.state.days.map(function (day) {
+                    return {
+                        id: day.id,
+                        label: Fmt.dayTabLabel(day) + (day.date ? ' · ' + Fmt.formatDateLabel(day.date) : '')
+                    };
+                })
+            }
+        });
+    },
+
     onItemRemove: function (event) {
         var self = this;
         var id = event.currentTarget.dataset.id;
@@ -937,8 +1039,11 @@ Page({
         this.setData({
             dayPicker: {
                 open: true,
+                mode: 'add',
+                itemId: '',
                 placeId: placeId,
                 placeName: place.name,
+                title: '把「' + place.name + '」加入哪一天？',
                 days: Store.state.days.map(function (day) {
                     return {
                         id: day.id,
@@ -955,9 +1060,22 @@ Page({
 
     onDayPickerPick: function (event) {
         var dayId = event.currentTarget.dataset.id;
-        var placeId = this.data.dayPicker.placeId;
+        var picker = this.data.dayPicker;
         var day = Store.getDay(dayId);
-        if (!day || !placeId) return;
+        if (!day) return;
+
+        if (picker.mode === 'move' && picker.itemId) {
+            if (!Store.findItem(picker.itemId)) return;
+            Store.moveItem(picker.itemId, dayId);
+            this.setData({ 'dayPicker.open': false });
+            this.setActiveDay(dayId);
+            this.refreshMap();
+            wx.showToast({ title: '已移动到 ' + day.name, icon: 'none' });
+            return;
+        }
+
+        var placeId = picker.placeId;
+        if (!placeId) return;
         Store.addItem(dayId, placeId);
         this.setData({ 'dayPicker.open': false });
         this.setActiveDay(dayId);

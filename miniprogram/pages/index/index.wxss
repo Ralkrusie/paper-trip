@@ -350,6 +350,13 @@
     color: #5e746e;
 }
 
+.list-hint {
+    padding: 6rpx 4rpx 22rpx;
+    text-align: center;
+    font-size: 22rpx;
+    color: #9aa8a2;
+}
+
 .empty {
     padding: 40rpx 20rpx;
     text-align: center;
