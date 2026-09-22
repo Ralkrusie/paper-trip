@@ -362,7 +362,6 @@
 
         // 通勤方式弹窗
         els.legForm.addEventListener('submit', onLegSubmit);
-        els.legNote.addEventListener('input', updateLegEstimate);
         els.legClearBtn.addEventListener('click', onLegClear);
 
         // 天弹窗
@@ -593,14 +592,24 @@
         line.style.borderLeftColor = legTravelColor(trips);
         var label = document.createElement('span');
         var km = computeDistKm(place.lat, place.lng, nextPlace.lat, nextPlace.lng);
-        var head = '↓ ' + describeLeg(entry);
-        var tail = ' · 直线 ' + km.toFixed(1) + ' km' + (trips >= 2 ? ' · ×' + trips : '');
-        label.textContent = head + tail;
+        var suffix = trips >= 2 ? ' · ×' + trips : '';
+        var fetchable = routeFetchable(entry.legMode);
+        var cacheKey = fetchable ? routeKey(entry.legMode, place, nextPlace) : '';
+        var cachedRoute = fetchable && routeCache[cacheKey] !== undefined ? routeCache[cacheKey] : null;
+        label.textContent = '↓ ' + legRowText(entry, km, cachedRoute) + suffix;
 
         row.appendChild(line);
         row.appendChild(label);
-        decorateAutoTransit(label, head, tail, entry, place, nextPlace);
         els.itemList.appendChild(row);
+
+        // 真实路线未就绪时异步查询，只更新这一行（不重建列表）；备注始终保留
+        if (fetchable && routeCache[cacheKey] === undefined && km >= 0.05) {
+            requestRoute(entry.legMode, place, nextPlace).then(function (route) {
+                if (route && label.isConnected) {
+                    label.textContent = '↓ ' + legRowText(entry, km, route) + suffix;
+                }
+            });
+        }
     }
 
     /** 通勤行的文字描述 */
@@ -619,50 +628,90 @@
             : '点此选择通勤方式';
     }
 
-    /* 地铁/公交「备注留空自动显示导航摘要」的缓存与查询（key = 起终点坐标） */
-    var transitAutoCache = {};
-    var transitAutoPending = {};
+    /* 真实路线（高德导航）缓存与查询：key = 方式 + 起终点坐标；值 = 结果对象或 null（无规划/失败） */
+    var routeCache = {};
+    var routePending = {};
 
-    function transitAutoKey(fromPlace, toPlace) {
-        return fromPlace.lat.toFixed(5) + ',' + fromPlace.lng.toFixed(5) + '>' +
+    function routeFetchable(mode) {
+        return mode === 'walk' || mode === 'bike' || mode === 'drive' || mode === 'taxi' ||
+            mode === 'bus' || mode === 'metro';
+    }
+
+    function routeKey(mode, fromPlace, toPlace) {
+        return mode + '|' + fromPlace.lat.toFixed(5) + ',' + fromPlace.lng.toFixed(5) + '>' +
             toPlace.lat.toFixed(5) + ',' + toPlace.lng.toFixed(5);
     }
 
-    function requestTransitSummary(fromPlace, toPlace) {
-        var key = transitAutoKey(fromPlace, toPlace);
-        if (transitAutoCache[key] !== undefined) return Promise.resolve(transitAutoCache[key] || null);
-        if (transitAutoPending[key]) return transitAutoPending[key];
-        if (!window.TripMap || typeof TripMap.transitSummary !== 'function') {
-            transitAutoCache[key] = '';
+    function requestRoute(mode, fromPlace, toPlace) {
+        var key = routeKey(mode, fromPlace, toPlace);
+        if (routeCache[key] !== undefined) return Promise.resolve(routeCache[key]);
+        if (routePending[key]) return routePending[key];
+        if (!window.TripMap || typeof TripMap.routeSummary !== 'function') {
+            routeCache[key] = null;
             return Promise.resolve(null);
         }
-        var task = TripMap.transitSummary(fromPlace.lng, fromPlace.lat, toPlace.lng, toPlace.lat)
-            .then(function (summary) {
-                transitAutoCache[key] = summary || '';
-                delete transitAutoPending[key];
-                return summary || null;
+        var task = TripMap.routeSummary(mode, fromPlace.lng, fromPlace.lat, toPlace.lng, toPlace.lat)
+            .then(function (route) {
+                routeCache[key] = route || null;
+                delete routePending[key];
+                return routeCache[key];
             }, function () {
-                transitAutoCache[key] = '';
-                delete transitAutoPending[key];
+                routeCache[key] = null;
+                delete routePending[key];
                 return null;
             });
-        transitAutoPending[key] = task;
+        routePending[key] = task;
         return task;
     }
 
-    /** 行程列表：地铁/公交且备注留空时，把导航摘要异步补进通勤行 */
-    function decorateAutoTransit(label, head, tail, entry, fromPlace, toPlace) {
-        if ((entry.legMode !== 'metro' && entry.legMode !== 'bus') || entry.legNote) return;
-        var km = computeDistKm(fromPlace.lat, fromPlace.lng, toPlace.lat, toPlace.lng);
-        if (km < 0.05) return;
-        var key = transitAutoKey(fromPlace, toPlace);
-        if (transitAutoCache[key] !== undefined) {
-            if (transitAutoCache[key]) label.textContent = head + ' · ' + transitAutoCache[key] + tail;
-            return;
+    function routeKm(distance) {
+        return (distance / 1000).toFixed(1) + ' km';
+    }
+
+    function routeMinutes(seconds) {
+        return Math.max(1, Math.round(seconds / 60));
+    }
+
+    function routeFare(cost) {
+        return '¥' + (Math.round(cost * 100) / 100);
+    }
+
+    /** 通勤行里的路线细节：公交/地铁显示完整换乘链+上下车站+票价，其余显示真实里程 */
+    function routeRowDetail(route) {
+        if (route.lines && route.lines.length) {
+            var text = route.lines.join(' → ');
+            if (route.from && route.to) text += ' · ' + route.from + ' → ' + route.to;
+            if (route.cost) text += ' · ' + routeFare(route.cost);
+            return text;
         }
-        requestTransitSummary(fromPlace, toPlace).then(function (summary) {
-            if (summary && label.isConnected) label.textContent = head + ' · ' + summary + tail;
-        });
+        if (route.distance) return routeKm(route.distance);
+        return '';
+    }
+
+    /** 通勤行完整文字：方式 · 时长 · 路线细节（无真实路线时用直线兜底） · 备注（备注只追加、不顶掉默认信息） */
+    function legRowText(entry, km, route) {
+        if (entry.legMode === 'other') {
+            return '其他方式' + (entry.legNote ? '：' + entry.legNote : '');
+        }
+        if (!entry.legMode) {
+            return entry.legMinutes !== null
+                ? '约 ' + entry.legMinutes + ' 分（自动估算，点此设置）'
+                : '点此选择通勤方式';
+        }
+        var parts = [LEG_MODE_LABELS[entry.legMode]];
+        if (route && route.time) {
+            parts.push('约 ' + routeMinutes(route.time) + ' 分');
+        } else if (entry.legMinutes !== null) {
+            parts.push('约 ' + entry.legMinutes + ' 分');
+        }
+        if (route) {
+            var detail = routeRowDetail(route);
+            if (detail) parts.push(detail);
+        } else {
+            parts.push('直线 ' + km.toFixed(1) + ' km');
+        }
+        if (entry.legNote) parts.push(entry.legNote);
+        return parts.join(' · ');
     }
 
     /** 这段通勤在整段行程里需要走的次数（同一对地点去/回都算，跨天累计） */
@@ -2026,6 +2075,26 @@
             legContext.fromPlace.lat, legContext.fromPlace.lng,
             legContext.toPlace.lat, legContext.toPlace.lng
         );
+        var fallback = legEstimateText(km);
+
+        if (!routeFetchable(editingLegMode) || km < 0.05) {
+            els.legEstimate.textContent = fallback;
+            return;
+        }
+        var key = routeKey(editingLegMode, legContext.fromPlace, legContext.toPlace);
+        if (routeCache[key] !== undefined) {
+            var route = routeCache[key];
+            els.legEstimate.textContent = route ? modalRouteText(route) : fallback;
+            return;
+        }
+        els.legEstimate.textContent = fallback + ' · 正在获取高德路线…';
+        requestRoute(editingLegMode, legContext.fromPlace, legContext.toPlace).then(function () {
+            if (els.legModal.open && legContext) updateLegEstimate();
+        });
+    }
+
+    /** 无高德路线时的本地估算说明（兜底） */
+    function legEstimateText(km) {
         var text = '两站直线距离 ' + km.toFixed(1) + ' km';
         if (editingLegMode === 'other') {
             text += ' · 其他方式不估算时间';
@@ -2038,25 +2107,23 @@
                 text += ' · ' + label + '约 ' + minutes + ' 分钟（含绕路修正' + (editingLegMode ? '）' : '，自动估算）');
             }
         }
-        els.legEstimate.textContent = text;
-        fillLegEstimateTransit(km);
+        return text;
     }
 
-    /** 地铁/公交且备注留空时：在估算行追加导航摘要（X号线 · XX站 → XX站） */
-    function fillLegEstimateTransit(km) {
-        if (!legContext) return;
-        if (editingLegMode !== 'metro' && editingLegMode !== 'bus') return;
-        if (els.legNote.value.trim()) return;
-        if (km < 0.05) return;
-        var key = transitAutoKey(legContext.fromPlace, legContext.toPlace);
-        if (transitAutoCache[key] !== undefined) {
-            if (transitAutoCache[key]) els.legEstimate.textContent += ' · ' + transitAutoCache[key];
-            return;
+    /** 弹窗里的高德真实路线说明 */
+    function modalRouteText(route) {
+        var parts = [];
+        if (route.time) parts.push('约 ' + routeMinutes(route.time) + ' 分');
+        if (route.lines && route.lines.length) {
+            var chain = route.lines.join(' → ');
+            if (route.from && route.to) chain += ' · ' + route.from + ' → ' + route.to;
+            parts.push(chain);
+            if (route.walking) parts.push('步行约 ' + routeKm(route.walking));
+            if (route.cost) parts.push(routeFare(route.cost));
+        } else if (route.distance) {
+            parts.push(routeKm(route.distance));
         }
-        els.legEstimate.textContent += ' · 查询导航…';
-        requestTransitSummary(legContext.fromPlace, legContext.toPlace).then(function () {
-            if (els.legModal.open && legContext) updateLegEstimate();
-        });
+        return '高德路线：' + parts.join(' · ');
     }
 
     function onLegSubmit(event) {

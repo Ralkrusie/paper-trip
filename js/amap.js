@@ -763,36 +763,76 @@
         });
     }
 
-    /**
-     * 公交换乘摘要：返回「地铁1号线 · 上海南站 → 衡山路站」样式的首段公交/地铁信息。
-     * 用于地铁/公交通勤备注留空时自动显示导航结果；失败返回 null。
-     */
-    function transitSummary(fromLng, fromLat, toLng, toLat) {
+    /** 通勤方式 → 高德路径规划服务（无匹配规划的方式返回 null） */
+    function routeServiceName(mode) {
+        if (mode === 'walk') return 'AMap.Walking';
+        if (mode === 'bike') return 'AMap.Riding';
+        if (mode === 'drive' || mode === 'taxi') return 'AMap.Driving';
+        if (mode === 'bus' || mode === 'metro') return 'AMap.Transfer';
+        return null;
+    }
+
+    /** 等 AMap JS API 就绪（页面加载早期就发起路线查询时用）；最多等 20 秒 */
+    function waitApiReady() {
         return new Promise(function (resolve) {
-            if (!window.AMap || !window.AMap.plugin) {
-                resolve(null);
+            if (window.AMap && window.AMap.plugin) {
+                resolve(true);
                 return;
             }
-            resolveCityName(fromLng, fromLat).then(function (city) {
+            var waited = 0;
+            var timer = window.setInterval(function () {
+                waited += 300;
+                if (window.AMap && window.AMap.plugin) {
+                    window.clearInterval(timer);
+                    resolve(true);
+                    return;
+                }
+                if (waited >= 20000) {
+                    window.clearInterval(timer);
+                    resolve(false);
+                }
+            }, 300);
+        });
+    }
+
+    /**
+     * 真实路线摘要：按通勤方式调用高德对应的路径规划服务。
+     * 返回 { time(秒), distance(米), walking(米|null), cost(元|null),
+     *        lines(线路名数组|null), from, to }；无匹配规划或失败返回 null。
+     * 注意：页面加载早期 window.AMap 可能尚未就绪，这里会等待就绪后再查询，
+     *       否则首次渲染的通勤行会被误判为「无路线」。
+     */
+    function routeSummary(mode, fromLng, fromLat, toLng, toLat) {
+        var service = routeServiceName(mode);
+        var from = { lng: Number(fromLng), lat: Number(fromLat) };
+        var to = { lng: Number(toLng), lat: Number(toLat) };
+        if (!service || !isFinite(from.lng) || !isFinite(from.lat) || !isFinite(to.lng) || !isFinite(to.lat)) {
+            return Promise.resolve(null);
+        }
+        return waitApiReady().then(function (ready) {
+            if (!ready) return null;
+            if (service === 'AMap.Transfer') return transferRoute(from, to);
+            return new Promise(function (resolve) {
                 var settled = false;
                 var timer = window.setTimeout(function () {
                     if (!settled) { settled = true; resolve(null); }
                 }, 8000);
-                window.AMap.plugin(['AMap.Transfer'], function () {
+                window.AMap.plugin([service], function () {
                     try {
-                        var transfer = new window.AMap.Transfer({
-                            city: city || '全国',
-                            policy: window.AMap.TransferPolicy ? window.AMap.TransferPolicy.LEAST_TIME : 0,
-                            autoFitView: false
-                        });
-                        transfer.search(
-                            new window.AMap.LngLat(Number(fromLng), Number(fromLat)),
-                            new window.AMap.LngLat(Number(toLng), Number(toLat)),
+                        var Ctor = window.AMap[service.slice(5)];
+                        if (typeof Ctor !== 'function') {
+                            if (!settled) { settled = true; window.clearTimeout(timer); resolve(null); }
+                            return;
+                        }
+                        var router = new Ctor({});
+                        router.search(
+                            new window.AMap.LngLat(from.lng, from.lat),
+                            new window.AMap.LngLat(to.lng, to.lat),
                             function (status, result) {
                                 if (settled) return;
                                 settled = true;
                                 window.clearTimeout(timer);
-                                resolve(parseTransitResult(status, result));
+                                resolve(parseSimpleRoute(status, result));
                             }
                         );
                     } catch (error) {
@@ -803,22 +843,86 @@
         });
     }
 
-    function parseTransitResult(status, result) {
+    function transferRoute(from, to) {
+        return new Promise(function (resolve) {
+            resolveCityName(from.lng, from.lat).then(function (city) {
+                var settled = false;
+                var timer = window.setTimeout(function () {
+                    if (!settled) { settled = true; resolve(null); }
+                }, 9000);
+                window.AMap.plugin(['AMap.Transfer'], function () {
+                    try {
+                        var transfer = new window.AMap.Transfer({
+                            city: city || '全国',
+                            policy: window.AMap.TransferPolicy ? window.AMap.TransferPolicy.LEAST_TIME : 0,
+                            autoFitView: false
+                        });
+                        transfer.search(
+                            new window.AMap.LngLat(from.lng, from.lat),
+                            new window.AMap.LngLat(to.lng, to.lat),
+                            function (status, result) {
+                                if (settled) return;
+                                settled = true;
+                                window.clearTimeout(timer);
+                                resolve(parseTransferRoute(status, result));
+                            }
+                        );
+                    } catch (error) {
+                        if (!settled) { settled = true; window.clearTimeout(timer); resolve(null); }
+                    }
+                });
+            });
+        });
+    }
+
+    /** 公交换乘结果 → 完整换乘链（多段公交/地铁全部收集，上车站取首段、下车站取末段） */
+    function parseTransferRoute(status, result) {
         if (status !== 'complete' || !result || !result.plans || !result.plans.length) return null;
-        var segments = result.plans[0].segments || [];
+        var plan = result.plans[0];
+        var segments = plan.segments || [];
+        var lines = [];
+        var fromStation = '';
+        var toStation = '';
         for (var i = 0; i < segments.length; i++) {
             var transit = segments[i] && segments[i].transit;
             if (!transit || !transit.lines || !transit.lines.length) continue;
-            var line = transit.lines[0];
-            // 去掉线路名里的方向后缀，如「地铁1号线(莘庄--富锦路)」→「地铁1号线」
-            var name = String(line.name || '').replace(/[（(].*$/, '').trim();
-            if (!name) continue;
-            // 上下车站：JS API 实测字段为 on_station / off_station，兼容 departure_stop / arrival_stop 写法
-            var dep = stopName(transit.on_station) || stopName(line.departure_stop);
-            var arr = stopName(transit.off_station) || stopName(line.arrival_stop);
-            return name + (dep && arr ? ' · ' + dep + ' → ' + arr : '');
+            for (var j = 0; j < transit.lines.length; j++) {
+                // 去掉线路名里的方向后缀，如「地铁1号线(莘庄--富锦路)」→「地铁1号线」
+                var name = String(transit.lines[j].name || '').replace(/[（(].*$/, '').trim();
+                if (name && lines.indexOf(name) === -1) lines.push(name);
+            }
+            var on = stopName(transit.on_station);
+            if (!fromStation && on) fromStation = on;
+            var off = stopName(transit.off_station);
+            if (off) toStation = off;
         }
-        return null;
+        if (!lines.length) return null;
+        return {
+            time: Number(plan.time) || null,
+            distance: Number(plan.distance) || null,
+            walking: Number(plan.walking_distance) || 0,
+            cost: plan.cost !== undefined && plan.cost !== null && Number(plan.cost) > 0 ? Number(plan.cost) : null,
+            lines: lines,
+            from: fromStation,
+            to: toStation
+        };
+    }
+
+    /** 步行 / 骑行 / 驾车结果 → 时长与距离 */
+    function parseSimpleRoute(status, result) {
+        if (status !== 'complete' || !result || !result.routes || !result.routes.length) return null;
+        var route = result.routes[0] || {};
+        var time = Number(route.time);
+        var distance = Number(route.distance);
+        return {
+            time: isFinite(time) && time > 0 ? time : null,
+            distance: isFinite(distance) && distance > 0 ? distance : null,
+            walking: null,
+            cost: null,
+            lines: null,
+            from: '',
+            to: ''
+        };
     }
 
     function stopName(stop) {
@@ -1061,7 +1165,7 @@
         getStyleMode: getStyleMode,
         getViewMode: getViewMode,
         reverseGeocode: reverseGeocode,
-        transitSummary: transitSummary,
+        routeSummary: routeSummary,
         geocodeAddress: geocodeAddress,
         nearbyPlaces: nearbyPlaces,
         searchPOI: searchPOI,
