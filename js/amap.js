@@ -33,6 +33,7 @@
     var styleIndex = 0;
     var satelliteOn = false;   // 当前是否挂着卫星图层
     var styleToken = 0;        // 样式切换令牌（防止快速连点时的异步竞态）
+    var desiredStyle = styleModes[0];  // 最新期望风格：所有异步校验都对照它判断
     var viewMode = '2D';
     var focusFrame = null;
     var focusResolve = null;
@@ -122,10 +123,8 @@
                     });
                 }
 
-                // 若上次退出时停留在卫星风格，初始化后补上卫星图层
-                if (styleModes[styleIndex] === 'satellite') {
-                    applyStyleMode('satellite');
-                }
+                // 统一走「应用 + 校验」循环：无论首次加载还是上次停在卫星，都保证收敛到期望风格
+                applyStyleMode(styleModes[styleIndex]);
 
                 map.on('click', emitMapClick);
 
@@ -560,48 +559,79 @@
         }, 380);
     }
 
+    /** 样式 URL / getMapStyle 返回值 → 可比较的短标识（'amap://styles/dark' → 'dark'） */
+    function styleKey(value) {
+        return String(value || '').split('/').pop().toLowerCase();
+    }
+
+    /** 校验时间点（毫秒）：每次应用后在这些时间点验一次，不符就重发，最后一点仍不符则告警 */
+    var STYLE_RETRY_DELAYS = [400, 900, 2000, 3200];
+
     /**
-     * 原位切换底图样式。
-     * 不再销毁重建：避免 WebGL 上下文耗尽、地图加载中切换白屏、事件句柄丢失等问题。
-     * 暗黑 ↔ 标准之间只调 setMapStyle（不再重建图层，避开图层与样式加载的竞态）；
-     * 从卫星切回矢量样式时才重置底图图层。
+     * 应用底图风格（统一入口，带「应用 → 校验 → 重试」自愈循环）。
+     * 背景：setMapStyle 是异步加载样式资源，偶发静默失败——尤其紧跟在：
+     *   a) setLayers 切换图层之后（如卫星 → 矢量）；
+     *   b) 地图实例刚重建之后（2D / 3D 切换）；
+     *   c) 地图仍在初始化加载中。
+     * 因此这里在多个时间点反复校验 getMapStyle()：与期望不符就重新应用，
+     * 直到一致或重试耗尽（约 3 秒），保证最终状态一定收敛到期望值。
      */
     function applyStyleMode(mode) {
-        if (!map || !window.AMap) return;
-        var token = ++styleToken;
-        try {
-            if (mode === 'satellite') {
-                if (window.AMap.TileLayer && typeof window.AMap.TileLayer.Satellite === 'function') {
-                    map.setLayers([new window.AMap.TileLayer.Satellite()]);
-                    satelliteOn = true;
-                }
-                return;
-            }
-
-            var target = styleUrl(mode);
-            if (satelliteOn) {
-                // 从卫星切回：先恢复默认底图图层，矢量样式才能生效
-                map.setLayers([new window.AMap.TileLayer()]);
-                satelliteOn = false;
-            }
-            map.setMapStyle(target);
-
-            // setMapStyle 是异步加载样式资源：本次切换后 1s 内若无新切换，再断言一次兼底
-            window.setTimeout(function () {
-                if (!map || token !== styleToken) return;
-                try {
-                    if (typeof map.getMapStyle === 'function') {
-                        var current = map.getMapStyle();
-                        if (current && String(current).indexOf(mode) !== -1) return;
-                    }
-                    map.setMapStyle(target);
-                } catch (error) {
-                    /* 忽略：极端情况下保持现状 */
-                }
-            }, 1000);
-        } catch (error) {
-            console.error('[amap] 样式切换失败：', error);
+        if (!map || !window.AMap) {
+            desiredStyle = mode;
+            return;
         }
+        desiredStyle = mode;
+        var token = ++styleToken;
+        var target = styleUrl(mode);
+        var targetKey = styleKey(target);
+        var wantSatellite = mode === 'satellite';
+
+        function syncLayers() {
+            try {
+                if (wantSatellite) {
+                    if (!satelliteOn && window.AMap.TileLayer && typeof window.AMap.TileLayer.Satellite === 'function') {
+                        map.setLayers([new window.AMap.TileLayer.Satellite()]);
+                        satelliteOn = true;
+                    }
+                } else if (satelliteOn) {
+                    // 从卫星切回：先恢复默认底图图层，矢量样式才能生效
+                    map.setLayers([new window.AMap.TileLayer()]);
+                    satelliteOn = false;
+                }
+            } catch (error) {
+                console.error('[amap] 图层切换失败：', error);
+            }
+        }
+
+        function attempt(index) {
+            if (!map || token !== styleToken || desiredStyle !== mode) return;
+            syncLayers();
+            try {
+                map.setMapStyle(target);
+            } catch (error) {
+                console.error('[amap] 样式切换失败：', error);
+            }
+
+            if (index >= STYLE_RETRY_DELAYS.length) return;
+            window.setTimeout(function () {
+                if (!map || token !== styleToken || desiredStyle !== mode) return;
+                var currentKey = '';
+                try {
+                    currentKey = typeof map.getMapStyle === 'function' ? styleKey(map.getMapStyle()) : targetKey;
+                } catch (error) {
+                    currentKey = '';
+                }
+                if (currentKey === targetKey) return;   // 已生效，提前结束
+                if (index === STYLE_RETRY_DELAYS.length - 1) {
+                    console.warn('[amap] 样式多次重试仍未生效：', mode, '当前=', currentKey || '未知');
+                    return;
+                }
+                attempt(index + 1);
+            }, STYLE_RETRY_DELAYS[index]);
+        }
+
+        attempt(0);
     }
 
     /** 重建地图实例（仅用于 2D/3D 视图切换——viewMode 无法原位修改） */
@@ -655,9 +685,8 @@
             });
         }
 
-        if (mode === 'satellite') {
-            applyStyleMode('satellite');
-        }
+        // 重建后统一走「应用 + 校验」循环（构造参数里的 mapStyle 可能被静默忽略）
+        applyStyleMode(mode);
 
         render(lastModel);
     }
