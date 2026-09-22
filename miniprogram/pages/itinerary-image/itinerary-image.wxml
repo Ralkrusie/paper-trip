@@ -1,0 +1,15 @@
+<!-- 拾途 Paper Trip · 行程图 -->
+<view class="page">
+    <scroll-view class="view" scroll-y enhanced show-scrollbar="{{false}}">
+        <canvas type="2d" id="trip-canvas" class="trip-canvas"
+            style="width: {{cssWidth}}px; height: {{cssHeight}}px;"></canvas>
+        <view class="hint">长图可直接发微信；建议点「分享图片」选择发送或保存</view>
+    </scroll-view>
+
+    <view class="actions">
+        <view class="btn primary" hover-class="btn-hover" bindtap="shareImage">分享图片</view>
+        <view class="btn" hover-class="btn-hover" bindtap="saveToAlbum">保存到相册</view>
+    </view>
+
+    <view wx:if="{{!ready}}" class="loading">正在生成行程图…</view>
+</view>

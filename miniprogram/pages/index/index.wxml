@@ -185,6 +185,8 @@
                 <view class="divider"></view>
 
                 <view class="btn block" hover-class="btn-hover" bindtap="goStats">📊 行程统计</view>
+                <view class="btn block" hover-class="btn-hover" style="margin-top: 16rpx;"
+                    bindtap="goItineraryImage">🖼 生成行程图（分享给朋友）</view>
 
                 <view class="divider"></view>
 

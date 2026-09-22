@@ -1157,6 +1157,10 @@ Page({
         wx.navigateTo({ url: '/pages/stats/stats' });
     },
 
+    goItineraryImage: function () {
+        wx.navigateTo({ url: '/pages/itinerary-image/itinerary-image' });
+    },
+
     openSettingsHint: function () {
         this.setData({ sheetOpen: true, tab: 'settings' });
     },
