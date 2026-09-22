@@ -1,0 +1,55 @@
+<!-- 拾途 Paper Trip · 使用帮助 -->
+<view class="page">
+
+    <view class="card">
+        <view class="h">📍 添加地点</view>
+        <view class="p">点地图任意位置即可添加：自动填充地址与附近地点候选，选一个精确落点。<view class="br" />也可以「地点 → 搜索添加」，用关键词搜地点（如「外滩」）。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">🗓 编排行程</view>
+        <view class="p">在「地点」页点 ＋ 选择加入哪一天（同一天可重复加，如「入住酒店 / 回酒店」）。<view class="br" /><text class="strong">长按行程项卡片</text>可上移 / 下移 / 移动到其它天；点卡片可编辑时间、停留、消费与备注。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">🚇 通勤方式</view>
+        <view class="p">点两站之间的「通勤行」设置：步行 / 骑行 / 驾车 / 打车 / 公共交通 / 其他。凡高德有在线路线的会显示<text class="strong">真实导航</text>——时长、完整换乘链与换乘站（如「地铁9号线 → 12号线（嘉善路换乘）· 打浦桥 → 陕西南路」）、步行距离；「其他」按直线估算兜底。动车 / 高铁班次可写进通勤备注，会追加显示。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">🌈 路线颜色与编号</view>
+        <view class="p">两站之间连线的颜色 = 这段路要走的次数：玫粉 1 次 → 粉红 2 次 → 玫紫 3 次 → 紫 4 次及以上（通勤行标注 ×N）。白色箭头沿全程路线循环流动指示方向；标记为<text class="strong">全程统一字母编号</text>（A、B、C…，超过 26 站接 27、28…，跨天不重置）。<view class="br" />点「▶ 浏览」镜头会跟随箭头把全程跑一遍，「全图」一键看整条路线。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">↺ 移除与恢复</view>
+        <view class="p">卡片点「移除」→ 变灰沉到当天最下方，不再计入时间轴 / 地图 / 统计，随时可恢复；也可以彻底删除。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">⏱ 时间轴</view>
+        <view class="p">行程项填了时间 = 硬性时刻（如演出 19:30）；<text class="strong">留空则按「上一站 + 停留 + 通勤」自动推算</text>，时长为高德真实通勤时间优先。迟到会自动标红。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">💰 消费记账</view>
+        <view class="p">在行程项里填「消费（元）」，到「统计」查看合计、每日金额与分类明细——只出现在统计里，不会上卡片或地图。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">🖼 行程图</view>
+        <view class="p">「设置 → 生成行程图」会把行程画成一张竖版长图（站点 / 时间 / 通勤），可直接发微信或保存到相册。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">💾 数据保存</view>
+        <view class="p">数据保存在<text class="strong">你的微信本地存储</text>里，换手机或清理前请先到「设置 → 导出数据」把 JSON 复制保存；在新设备用「导入数据」粘贴恢复。与网页版互通。</view>
+    </view>
+
+    <view class="card">
+        <view class="h">🔑 高德 Key（路线数据来源）</view>
+        <view class="p">真实路线来自高德 Web 服务。未配置 Key 或查询失败时，路线自动退化为虚线直连 + 本地估算（不会报错）。Key 可在「设置」里填写。</view>
+    </view>
+
+    <view class="footer">拾途 Paper Trip · 沿途拾景，落纸成行</view>
+</view>

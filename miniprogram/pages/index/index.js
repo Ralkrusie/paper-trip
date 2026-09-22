@@ -1161,6 +1161,10 @@ Page({
         wx.navigateTo({ url: '/pages/itinerary-image/itinerary-image' });
     },
 
+    goHelp: function () {
+        wx.navigateTo({ url: '/pages/help/help' });
+    },
+
     openSettingsHint: function () {
         this.setData({ sheetOpen: true, tab: 'settings' });
     },

@@ -1,0 +1,45 @@
+/* 拾途 Paper Trip · 帮助页样式 */
+page {
+    background: #f4f6ea;
+}
+
+.page {
+    padding: 24rpx 28rpx calc(60rpx + env(safe-area-inset-bottom));
+}
+
+.card {
+    background: #f8faee;
+    border-radius: 20rpx;
+    padding: 28rpx;
+    margin-bottom: 22rpx;
+    box-shadow: 0 4rpx 16rpx rgba(16, 40, 36, 0.08);
+}
+
+.h {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: #1e302c;
+    margin-bottom: 14rpx;
+}
+
+.p {
+    font-size: 26rpx;
+    color: #39514c;
+    line-height: 1.75;
+}
+
+.br {
+    height: 10rpx;
+}
+
+.strong {
+    font-weight: 700;
+    color: #1f6e61;
+}
+
+.footer {
+    padding: 20rpx 0 10rpx;
+    text-align: center;
+    font-size: 22rpx;
+    color: #9aa8a2;
+}

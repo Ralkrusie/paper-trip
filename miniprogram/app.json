@@ -4,7 +4,8 @@
         "pages/item/item",
         "pages/place/place",
         "pages/stats/stats",
-        "pages/itinerary-image/itinerary-image"
+        "pages/itinerary-image/itinerary-image",
+        "pages/help/help"
     ],
     "window": {
         "navigationBarBackgroundColor": "#152d2a",
