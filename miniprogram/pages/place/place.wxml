@@ -1,0 +1,69 @@
+<!-- 拾途 Paper Trip · 地点编辑 -->
+<view class="page">
+    <view class="card">
+        <view class="field">
+            <text class="field-label">名称</text>
+            <input class="input" value="{{name}}" bindinput="onNameInput" maxlength="60" placeholder="如：上海博物馆" />
+        </view>
+        <view class="field">
+            <text class="field-label">分类</text>
+            <view class="chips">
+                <view class="chip {{item.active ? 'is-active' : ''}}" wx:for="{{categories}}" wx:key="id"
+                    data-id="{{item.id}}" bindtap="onCatTap">{{item.name}}</view>
+            </view>
+        </view>
+        <view class="field">
+            <text class="field-label">地址</text>
+            <input class="input" value="{{address}}" bindinput="onAddressInput" maxlength="120" placeholder="如：人民大道 201 号" />
+        </view>
+        <view class="field">
+            <text class="field-label">备注</text>
+            <textarea class="textarea" value="{{note}}" bindinput="onNoteInput" auto-height maxlength="300"
+                placeholder="门票、开放时间等" />
+        </view>
+        <view class="coord-row">
+            <text class="hint">{{hasCoords ? '坐标：' + coordText : '尚未选择坐标（从地图点选或搜索选择）'}}</text>
+        </view>
+        <view wx:if="{{usageText}}" class="usage">{{usageText}}</view>
+    </view>
+
+    <!-- 新增：搜索与附近候选 -->
+    <view wx:if="{{isNew}}" class="card">
+        <view class="field">
+            <text class="field-label">搜索地点（高德 POI）</text>
+            <view class="search-row">
+                <input class="input search-input" value="{{keyword}}" bindinput="onKeywordInput" confirm-type="search"
+                    bindconfirm="search" placeholder="如：外滩 / 虹桥火车站" />
+                <view class="btn primary small" hover-class="btn-hover" bindtap="search">
+                    {{searching ? '搜索中…' : '搜索'}}</view>
+            </view>
+        </view>
+        <view wx:if="{{keyMissing}}" class="tip-card">未配置高德 Key，搜索不可用：可在「设置」里填写，或直接在地图上点选地点。</view>
+
+        <view wx:if="{{results.length}}" class="sub-list">
+            <view class="sub-title">搜索结果 · 点击填入</view>
+            <view class="sub-row" wx:for="{{results}}" wx:key="key" data-index="{{index}}" bindtap="onResultTap">
+                <view class="sub-name">{{item.name}}</view>
+                <view wx:if="{{item.address}}" class="sub-address">{{item.address}}</view>
+            </view>
+        </view>
+        <view wx:elif="{{searched}}" class="hint">没有找到相关地点，换个关键词试试。</view>
+
+        <block wx:if="{{nearby.length || nearbyLoading}}">
+            <view class="sub-list">
+                <view class="sub-title">附近地点{{nearbyLoading ? '（加载中…）' : ' · 点击填入名称'}}</view>
+                <view class="sub-row" wx:for="{{nearby}}" wx:key="name" data-name="{{item.name}}" bindtap="onNearbyTap">
+                    <view class="sub-name">{{item.name}}</view>
+                </view>
+            </view>
+        </block>
+    </view>
+
+    <view class="actions">
+        <view class="btn primary block" hover-class="btn-hover" bindtap="save">保存</view>
+        <view class="action-row">
+            <view wx:if="{{!isNew}}" class="btn danger small" hover-class="btn-hover" bindtap="remove">删除该地点</view>
+            <view class="btn small" hover-class="btn-hover" bindtap="navigateHere">🧭 导航到这里</view>
+        </view>
+    </view>
+</view>

@@ -1,0 +1,162 @@
+/**
+ * 拾途 Paper Trip · 全局样式
+ * 设计语言与网页版一致：宣纸底、墨色文字、青瓷点缀、朱砂辅助。
+ */
+page {
+    --ink: #1e302c;
+    --ink-soft: #39514c;
+    --ink-muted: #5e746e;
+    --paper: #eff2e2;
+    --paper-bright: #f8faee;
+    --celadon: #4fa89a;
+    --cinnabar: #2e8f80;
+    --highlight: #c9680f;
+    --danger: #b23a22;
+    --line: rgba(31, 52, 48, 0.22);
+    background: #0f1f1d;
+    color: var(--ink);
+    font-size: 28rpx;
+    line-height: 1.6;
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+/* ---------- 通用按钮 ---------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16rpx 32rpx;
+    border-radius: 14rpx;
+    background: #e3e8d8;
+    color: var(--ink-soft);
+    font-size: 28rpx;
+}
+
+.btn.primary {
+    background: var(--cinnabar);
+    color: #fdfefb;
+}
+
+.btn.plain {
+    background: transparent;
+    border: 2rpx solid var(--line);
+}
+
+.btn.danger {
+    color: var(--danger);
+}
+
+.btn.block {
+    display: flex;
+    width: 100%;
+}
+
+.btn.small {
+    padding: 10rpx 22rpx;
+    font-size: 24rpx;
+    border-radius: 10rpx;
+}
+
+.btn-hover {
+    opacity: 0.78;
+}
+
+/* ---------- 标签 chip ---------- */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8rpx 20rpx;
+    border-radius: 999rpx;
+    background: #e3e8d8;
+    color: var(--ink-soft);
+    font-size: 23rpx;
+    margin: 0 12rpx 12rpx 0;
+}
+
+.chip.is-active {
+    background: var(--cinnabar);
+    color: #fdfefb;
+}
+
+.chip.is-ghost {
+    background: rgba(47, 168, 152, 0.14);
+    color: #1f6e61;
+}
+
+/* ---------- 表单 ---------- */
+.field {
+    margin-bottom: 28rpx;
+}
+
+.field-label {
+    display: block;
+    font-size: 24rpx;
+    color: var(--ink-muted);
+    margin-bottom: 10rpx;
+}
+
+.input,
+.textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    border: 2rpx solid var(--line);
+    border-radius: 12rpx;
+    padding: 16rpx 20rpx;
+    font-size: 28rpx;
+    color: var(--ink);
+}
+
+.textarea {
+    min-height: 150rpx;
+}
+
+.picker-value {
+    background: #fff;
+    border: 2rpx solid var(--line);
+    border-radius: 12rpx;
+    padding: 16rpx 20rpx;
+    font-size: 28rpx;
+}
+
+.placeholder {
+    color: #9aa8a2;
+}
+
+/* ---------- 文本 ---------- */
+.hint {
+    font-size: 22rpx;
+    color: var(--ink-muted);
+}
+
+.tip-card {
+    background: rgba(201, 104, 15, 0.1);
+    border: 2rpx solid rgba(201, 104, 15, 0.35);
+    border-radius: 12rpx;
+    padding: 18rpx 22rpx;
+    font-size: 24rpx;
+    color: #8a5312;
+}
+
+.danger-text {
+    color: var(--danger);
+}
+
+.divider {
+    height: 2rpx;
+    background: var(--line);
+    margin: 28rpx 0;
+}
+
+/* ---------- 徽标 ---------- */
+.badge {
+    flex: none;
+    width: 52rpx;
+    height: 52rpx;
+    border-radius: 50%;
+    color: #fffdf6;
+    font-size: 26rpx;
+    line-height: 52rpx;
+    text-align: center;
+    font-weight: 600;
+}

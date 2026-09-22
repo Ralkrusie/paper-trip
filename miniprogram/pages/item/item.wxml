@@ -1,0 +1,64 @@
+<!-- 拾途 Paper Trip · 行程项编辑 -->
+<view class="page">
+    <view class="card">
+        <view class="place-head">
+            <view class="cat-dot" style="background: {{placeColor}}"></view>
+            <view class="place-name">{{placeName}}</view>
+        </view>
+        <view wx:if="{{placeAddress}}" class="hint address">{{placeAddress}}</view>
+    </view>
+
+    <view class="card">
+        <view class="field">
+            <text class="field-label">时间<text class="field-tip">留空则按上一站推算</text></text>
+            <picker mode="time" value="{{time || '09:00'}}" bindchange="onTimePick">
+                <view class="picker-value {{time ? '' : 'placeholder'}}">{{time || '未设置'}}</view>
+            </picker>
+            <view wx:if="{{time}}" class="mini-btn" style="margin-top: 12rpx;" bindtap="clearTime">清除时间</view>
+        </view>
+        <view class="field">
+            <text class="field-label">停留（分钟）</text>
+            <input class="input" type="number" value="{{stay}}" bindinput="onStayInput" placeholder="如 60" />
+        </view>
+        <view class="field">
+            <text class="field-label">消费（元，仅统计页显示）</text>
+            <input class="input" type="digit" value="{{cost}}" bindinput="onCostInput" placeholder="如 128" />
+        </view>
+        <view class="field">
+            <text class="field-label">所属天</text>
+            <picker mode="selector" range="{{dayLabels}}" value="{{dayIndex}}" bindchange="onDayChange">
+                <view class="picker-value">{{dayLabels[dayIndex]}}</view>
+            </picker>
+        </view>
+        <view class="field">
+            <text class="field-label">备注</text>
+            <textarea class="textarea" value="{{note}}" bindinput="onNoteInput" auto-height maxlength="500"
+                placeholder="班次、门票、集合信息等" />
+        </view>
+    </view>
+
+    <view class="card">
+        <block wx:if="{{hasNext}}">
+            <view class="section-title">到「{{nextName}}」的通勤</view>
+            <view class="modes">
+                <view class="chip {{item.active ? 'is-active' : ''}}" wx:for="{{modes}}" wx:key="mode"
+                    data-mode="{{item.mode}}" bindtap="onModeTap">{{item.label}}</view>
+            </view>
+            <view class="leg-info">{{legInfo}}</view>
+            <view class="field" style="margin-top: 16rpx;">
+                <text class="field-label">通勤备注（班次等信息写这里）</text>
+                <input class="input" value="{{legNote}}" bindinput="onLegNoteInput" placeholder="如 地铁 9 号线 · 07:50 班次" />
+            </view>
+        </block>
+        <view wx:else class="hint">这是当天最后一站，无需设置通勤。</view>
+    </view>
+
+    <view class="actions">
+        <view class="btn primary block" hover-class="btn-hover" bindtap="save">保存</view>
+        <view class="action-row">
+            <view class="btn {{disabled ? '' : 'danger'}} small" hover-class="btn-hover" bindtap="toggleDisabled">
+                {{disabled ? '恢复该站点' : '移除该站点'}}</view>
+            <view class="btn small" hover-class="btn-hover" bindtap="navigateHere">🧭 导航到这里</view>
+        </view>
+    </view>
+</view>

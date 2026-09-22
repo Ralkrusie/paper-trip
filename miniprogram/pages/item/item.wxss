@@ -1,0 +1,76 @@
+/* 拾途 Paper Trip · 行程项编辑页样式 */
+page {
+    background: #f4f6ea;
+}
+
+.page {
+    padding: 24rpx 28rpx calc(60rpx + env(safe-area-inset-bottom));
+}
+
+.card {
+    background: #f8faee;
+    border-radius: 20rpx;
+    padding: 28rpx;
+    margin-bottom: 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(16, 40, 36, 0.08);
+}
+
+.place-head {
+    display: flex;
+    align-items: center;
+}
+
+.cat-dot {
+    flex: none;
+    width: 22rpx;
+    height: 22rpx;
+    border-radius: 50%;
+    margin-right: 18rpx;
+}
+
+.place-name {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #1e302c;
+}
+
+.address {
+    margin-top: 10rpx;
+}
+
+.field-tip {
+    margin-left: 12rpx;
+    font-size: 22rpx;
+    color: #8a978f;
+}
+
+.section-title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: #1e302c;
+    margin-bottom: 20rpx;
+}
+
+.modes {
+    padding-bottom: 4rpx;
+}
+
+.leg-info {
+    margin-top: 8rpx;
+    padding: 18rpx 22rpx;
+    border-radius: 12rpx;
+    background: rgba(46, 143, 128, 0.1);
+    color: #1f6e61;
+    font-size: 24rpx;
+    line-height: 1.6;
+}
+
+.actions {
+    margin-top: 8rpx;
+}
+
+.action-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20rpx;
+}

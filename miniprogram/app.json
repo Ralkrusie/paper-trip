@@ -1,0 +1,25 @@
+{
+    "pages": [
+        "pages/index/index",
+        "pages/item/item",
+        "pages/place/place",
+        "pages/stats/stats"
+    ],
+    "window": {
+        "navigationBarBackgroundColor": "#152d2a",
+        "navigationBarTextStyle": "white",
+        "navigationBarTitleText": "拾途 Paper Trip",
+        "backgroundColor": "#0f1f1d",
+        "backgroundTextStyle": "dark"
+    },
+    "permission": {
+        "scope.userLocation": {
+            "desc": "用于在地图上定位你当前的位置"
+        }
+    },
+    "requiredPrivateInfos": [
+        "getLocation"
+    ],
+    "style": "v2",
+    "sitemapLocation": "sitemap.json"
+}

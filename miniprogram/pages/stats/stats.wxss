@@ -1,0 +1,98 @@
+/* 拾途 Paper Trip · 统计页样式 */
+page {
+    background: #f4f6ea;
+}
+
+.page {
+    padding: 24rpx 28rpx calc(60rpx + env(safe-area-inset-bottom));
+}
+
+.card {
+    background: #f8faee;
+    border-radius: 20rpx;
+    padding: 28rpx;
+    margin-bottom: 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(16, 40, 36, 0.08);
+}
+
+.summary {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #1e302c;
+}
+
+.cost {
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    color: #8a5312;
+    line-height: 1.6;
+}
+
+.cost.is-muted {
+    color: #5e746e;
+}
+
+.panel-title {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #1e302c;
+    margin-bottom: 22rpx;
+}
+
+.bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18rpx;
+}
+
+.bar-name {
+    flex: none;
+    width: 130rpx;
+    font-size: 24rpx;
+    color: #39514c;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bar-track {
+    flex: 1;
+    height: 28rpx;
+    border-radius: 8rpx;
+    background: #e9edda;
+    overflow: hidden;
+    margin: 0 16rpx;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 8rpx;
+    background: #2fa898;
+}
+
+.bar-fill.is-blue {
+    background: #3f7e93;
+}
+
+.bar-fill.is-orange {
+    background: #e8833a;
+}
+
+.bar-fill.is-red {
+    background: #be4a2d;
+}
+
+.bar-value {
+    flex: none;
+    width: 120rpx;
+    text-align: right;
+    font-size: 24rpx;
+    color: #1e302c;
+}
+
+.empty {
+    text-align: center;
+    color: #5e746e;
+    font-size: 26rpx;
+    line-height: 1.8;
+}

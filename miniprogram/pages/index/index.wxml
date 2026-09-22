@@ -1,0 +1,244 @@
+<!-- 拾途 Paper Trip · 主页面：地图 + 底部抽屉 -->
+<view class="page">
+
+    <!-- 地图（底图由微信 map 组件提供；缩放级别范围 3-20） -->
+    <map id="trip-map" class="trip-map" longitude="{{mapCenter.longitude}}" latitude="{{mapCenter.latitude}}"
+        scale="{{mapScale}}" markers="{{markers}}" polyline="{{polylines}}" include-points="{{includePoints}}"
+        setting="{{mapSetting}}" enable-zoom="{{true}}" enable-scroll="{{true}}" enable-rotate="{{false}}"
+        enable-poi="{{true}}" show-compass="{{false}}" bindmarkertap="onMarkerTap" bindlabeltap="onMarkerTap"
+        bindtap="onMapTap" bindregionchange="onRegionChange"></map>
+
+    <!-- 地图上的悬浮按钮 -->
+    <view class="map-tools">
+        <view class="tool-btn" hover-class="btn-hover" bindtap="fitAll">全图</view>
+        <view class="tool-btn {{touring ? 'is-danger' : ''}}" hover-class="btn-hover" bindtap="toggleTour">
+            {{touring ? '⏹ 停止' : '▶ 浏览'}}
+        </view>
+        <view class="tool-btn" hover-class="btn-hover" bindtap="locate">定位</view>
+    </view>
+
+    <!-- 未配置高德 Key 时的提示 -->
+    <view wx:if="{{keyMissing && hasPlaces}}" class="key-hint" hover-class="btn-hover" bindtap="openSettingsHint">
+        未配置高德 Key · 路线为估算
+    </view>
+
+    <!-- 点图添加模式提示 -->
+    <view wx:if="{{pickMode}}" class="pick-banner">点击地图任意位置以添加地点</view>
+
+    <!-- 空地图提示 -->
+    <view wx:if="{{!hasPlaces}}" class="map-empty">
+        <view class="map-empty-title">还没有地点</view>
+        <view class="map-empty-sub">点地图任意位置即可添加第一个地点；<br />也可以从「地点 → 搜索添加」开始。</view>
+    </view>
+
+    <!-- 打开抽屉的按钮（抽屉收起时显示） -->
+    <view wx:if="{{!sheetOpen}}" class="sheet-toggle" hover-class="btn-hover" bindtap="toggleSheet">
+        <text>行程</text>
+        <text class="sheet-toggle-arrow">▴</text>
+    </view>
+
+    <!-- 底部抽屉 -->
+    <view class="sheet {{sheetOpen ? 'is-open' : ''}}">
+        <view class="sheet-head">
+            <view class="sheet-tabs">
+                <view class="sheet-tab {{tab === 'itinerary' ? 'is-active' : ''}}" data-tab="itinerary"
+                    bindtap="switchTab">行程</view>
+                <view class="sheet-tab {{tab === 'library' ? 'is-active' : ''}}" data-tab="library"
+                    bindtap="switchTab">地点</view>
+                <view class="sheet-tab {{tab === 'settings' ? 'is-active' : ''}}" data-tab="settings"
+                    bindtap="switchTab">设置</view>
+            </view>
+            <view class="sheet-close" hover-class="btn-hover" bindtap="closeSheet">收起 ▾</view>
+        </view>
+
+        <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
+
+            <!-- ============ 行程 ============ -->
+            <block wx:if="{{tab === 'itinerary'}}">
+                <scroll-view class="day-tabs" scroll-x enhanced show-scrollbar="{{false}}">
+                    <view class="day-tab {{item.active ? 'is-active' : ''}}" wx:for="{{days}}" wx:key="id"
+                        data-id="{{item.id}}" bindtap="onDayTap" bindlongpress="onDayLongPress">{{item.label}}</view>
+                    <view class="day-tab is-add" bindtap="onAddDay">＋ 新的一天</view>
+                </scroll-view>
+
+                <view class="day-meta">{{dayMeta}}</view>
+
+                <view class="rows">
+                    <block wx:for="{{rows}}" wx:key="key">
+                        <view wx:if="{{item.type === 'leg'}}" class="leg-row" data-item-id="{{item.itemId}}"
+                            bindtap="onLegTap">
+                            <view class="leg-bar" style="background: {{item.color}}"></view>
+                            <text class="leg-text">{{item.text}}</text>
+                        </view>
+                        <view wx:else class="item-row {{item.late ? 'is-late' : ''}} {{item.active ? 'is-active' : ''}}"
+                            data-id="{{item.id}}" bindtap="onItemTap">
+                            <view class="badge" style="background: {{item.color}}">{{item.badge}}</view>
+                            <view class="item-main">
+                                <view class="item-title">{{item.name}}</view>
+                                <view class="item-chips">
+                                    <text class="chip-item {{c.cls}}" wx:for="{{item.chips}}" wx:for-item="c"
+                                        wx:key="text">{{c.text}}</text>
+                                </view>
+                                <view wx:if="{{item.note}}" class="item-note">{{item.note}}</view>
+                            </view>
+                            <view class="item-actions">
+                                <view class="mini-btn" catchtap="onItemEdit" data-id="{{item.id}}">编辑</view>
+                                <view class="mini-btn danger-text" catchtap="onItemRemove"
+                                    data-id="{{item.id}}">移除</view>
+                            </view>
+                        </view>
+                    </block>
+                </view>
+                <view wx:if="{{rows.length === 0}}" class="empty">
+                    这一天还没有安排。去「地点」把地点加入这一天，或点地图添加。
+                </view>
+
+                <block wx:if="{{disabledRows.length}}">
+                    <view class="section-label">已移除 {{disabledRows.length}} 项 · 可恢复或删除</view>
+                    <view class="item-row is-disabled" wx:for="{{disabledRows}}" wx:key="id" data-id="{{item.id}}">
+                        <view class="badge is-off">—</view>
+                        <view class="item-main">
+                            <view class="item-title">{{item.name}}</view>
+                            <view wx:if="{{item.sub}}" class="item-note">{{item.sub}}</view>
+                        </view>
+                        <view class="item-actions">
+                            <view class="mini-btn" catchtap="onRestoreItem" data-id="{{item.id}}">恢复</view>
+                            <view class="mini-btn danger-text" catchtap="onPurgeItem" data-id="{{item.id}}">彻底删除</view>
+                        </view>
+                    </view>
+                </block>
+            </block>
+
+            <!-- ============ 地点库 ============ -->
+            <block wx:elif="{{tab === 'library'}}">
+                <view class="lib-actions">
+                    <view class="btn primary small" hover-class="btn-hover" bindtap="goSearchPlace">🔍 搜索添加</view>
+                    <view class="btn small {{pickMode ? 'primary' : 'plain'}}" hover-class="btn-hover"
+                        bindtap="onPickMode">📍 点图添加</view>
+                </view>
+
+                <input class="input lib-search" value="{{libKeyword}}" placeholder="筛选地点名称 / 地址"
+                    bindinput="onLibKeyword" confirm-type="search" />
+
+                <view class="lib-chips">
+                    <view class="chip {{libFilter === 'all' ? 'is-active' : ''}}" data-id="all" bindtap="onLibFilter">
+                        全部 {{placesTotal}}</view>
+                    <view class="chip {{libFilter === item.id ? 'is-active' : ''}}" wx:for="{{libCategories}}"
+                        wx:key="id" data-id="{{item.id}}" bindtap="onLibFilter">{{item.name}} {{item.count}}</view>
+                </view>
+
+                <view class="place-row {{item.active ? 'is-active' : ''}}" wx:for="{{places}}" wx:key="id"
+                    data-id="{{item.id}}" bindtap="onPlaceTap">
+                    <view class="cat-dot" style="background: {{item.color}}"></view>
+                    <view class="place-main">
+                        <view class="place-name">{{item.name}}</view>
+                        <view class="place-sub">{{item.catName}}<text wx:if="{{item.address}}"> ·
+                                {{item.address}}</text></view>
+                        <view wx:if="{{item.usageText}}" class="place-usage">{{item.usageText}}</view>
+                    </view>
+                    <view class="mini-btn is-add" catchtap="onPlaceAddToDay" data-id="{{item.id}}">＋</view>
+                </view>
+
+                <view wx:if="{{places.length === 0}}" class="empty">
+                    还没有地点。点地图任意位置，或「搜索添加」。
+                </view>
+            </block>
+
+            <!-- ============ 设置 ============ -->
+            <block wx:else>
+                <view class="field">
+                    <text class="field-label">行程名称</text>
+                    <input class="input" value="{{tripTitle}}" bindinput="onTripTitle" maxlength="40" />
+                </view>
+                <view class="field">
+                    <text class="field-label">行程备注</text>
+                    <textarea class="textarea" value="{{tripNote}}" bindinput="onTripNote" auto-height
+                        maxlength="500" />
+                </view>
+                <view class="btn primary block" hover-class="btn-hover" bindtap="saveTripInfo">保存行程信息</view>
+
+                <view class="divider"></view>
+
+                <view class="field">
+                    <text class="field-label">高德「Web 服务」Key（真实路线用）</text>
+                    <input class="input" value="{{amapKey}}" bindinput="onAmapKey"
+                        placeholder="在高德开放平台新建 Web 服务类型 Key 后粘贴到这里" />
+                </view>
+                <view class="btn block" hover-class="btn-hover" bindtap="saveAmapKey">保存 Key 并获取路线</view>
+                <view wx:if="{{keyMissing}}" class="tip-card" style="margin-top: 20rpx;">
+                    尚未配置高德 Key：路线会退化为虚线直连与本地估算。配置后自动获取真实导航，
+                    地铁/公交会显示线路与换乘站。
+                </view>
+
+                <view class="divider"></view>
+
+                <view class="switch-row">
+                    <text>卫星底图</text>
+                    <switch checked="{{satellite}}" bindchange="onSatelliteChange" color="#2e8f80" />
+                </view>
+                <view class="switch-row">
+                    <text>3D 视角</text>
+                    <switch checked="{{view3D}}" bindchange="onView3DChange" color="#2e8f80" />
+                </view>
+
+                <view class="divider"></view>
+
+                <view class="btn block" hover-class="btn-hover" bindtap="goStats">📊 行程统计</view>
+
+                <view class="divider"></view>
+
+                <view class="btn block" hover-class="btn-hover" bindtap="exportData">导出数据（复制到剪贴板）</view>
+                <view class="field" style="margin-top: 20rpx;">
+                    <text class="field-label">导入数据（粘贴 JSON 后点导入，将覆盖当前全部数据）</text>
+                    <textarea class="textarea" value="{{importText}}" bindinput="onImportText"
+                        placeholder='粘贴网页版导出的 JSON，或本页导出的备份' />
+                </view>
+                <view class="btn block" hover-class="btn-hover" bindtap="doImport">导入</view>
+                <view class="btn block danger-text" style="margin-top: 16rpx;" hover-class="btn-hover"
+                    bindtap="clearAll">清空全部数据</view>
+
+                <view class="hint" style="margin-top: 24rpx;">
+                    <view>· 与网页版互通：网页版「导出 JSON」的内容可直接粘贴导入，反之亦然。</view>
+                    <view>· 数据保存在你的微信本地存储，换手机需通过导出/导入迁移。</view>
+                    <view>· 底图由微信提供（腾讯），与高德路线的坐标系一致，叠加显示正常。</view>
+                </view>
+            </block>
+
+        </scroll-view>
+    </view>
+
+    <!-- 加入某天 弹层 -->
+    <view wx:if="{{dayPicker.open}}" class="popup-mask" bindtap="closeDayPicker">
+        <view class="popup" catchtap="noop">
+            <view class="popup-title">把「{{dayPicker.placeName}}」加入哪一天？</view>
+            <view class="popup-row" wx:for="{{dayPicker.days}}" wx:key="id" data-id="{{item.id}}"
+                bindtap="onDayPickerPick">{{item.label}}</view>
+            <view class="popup-row is-new" bindtap="onDayPickerNew">＋ 新建一天并添加</view>
+            <view class="popup-cancel" bindtap="closeDayPicker">取消</view>
+        </view>
+    </view>
+
+    <!-- 编辑某天 弹层 -->
+    <view wx:if="{{dayEdit.open}}" class="popup-mask" bindtap="closeDayEdit">
+        <view class="popup" catchtap="noop">
+            <view class="popup-title">编辑这一天</view>
+            <view class="field">
+                <text class="field-label">名称</text>
+                <input class="input" value="{{dayEdit.name}}" bindinput="onDayEditName" maxlength="20" />
+            </view>
+            <view class="field">
+                <text class="field-label">日期（可选，填写后按日期排序）</text>
+                <picker mode="date" value="{{dayEdit.date || today}}" bindchange="onDayEditDate">
+                    <view class="picker-value {{dayEdit.date ? '' : 'placeholder'}}">{{dayEdit.date || '未设置'}}</view>
+                </picker>
+                <view wx:if="{{dayEdit.date}}" class="mini-btn" style="margin-top: 12rpx;" bindtap="clearDayDate">
+                    清除日期</view>
+            </view>
+            <view class="btn primary block" hover-class="btn-hover" bindtap="saveDayEdit">保存</view>
+            <view wx:if="{{canDeleteDay}}" class="btn block danger-text" style="margin-top: 16rpx;"
+                hover-class="btn-hover" bindtap="deleteDay">删除这一天</view>
+            <view class="popup-cancel" bindtap="closeDayEdit">取消</view>
+        </view>
+    </view>
+
+</view>

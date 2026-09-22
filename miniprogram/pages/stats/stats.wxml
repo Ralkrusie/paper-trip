@@ -1,0 +1,55 @@
+<!-- 拾途 Paper Trip · 统计 -->
+<view class="page">
+    <view class="card">
+        <view class="summary">{{summary}}</view>
+        <view class="cost {{hasCost ? '' : 'is-muted'}}">{{costLine}}</view>
+    </view>
+
+    <view wx:if="{{empty}}" class="card empty">还没有数据：先在地图上添加地点、安排行程，这里就会自动统计。</view>
+
+    <block wx:else>
+        <view class="card">
+            <view class="panel-title">每日站点数</view>
+            <view class="bar-row" wx:for="{{dayCount}}" wx:key="name">
+                <view class="bar-name">{{item.name}}</view>
+                <view class="bar-track">
+                    <view class="bar-fill" style="width: {{item.width}}%"></view>
+                </view>
+                <view class="bar-value">{{item.value}}</view>
+            </view>
+        </view>
+
+        <view class="card">
+            <view class="panel-title">每日直线里程（km）</view>
+            <view class="bar-row" wx:for="{{dayDistance}}" wx:key="name">
+                <view class="bar-name">{{item.name}}</view>
+                <view class="bar-track">
+                    <view class="bar-fill is-blue" style="width: {{item.width}}%"></view>
+                </view>
+                <view class="bar-value">{{item.value}}</view>
+            </view>
+        </view>
+
+        <view wx:if="{{hasCost}}" class="card">
+            <view class="panel-title">每日消费（元）</view>
+            <view class="bar-row" wx:for="{{dayCost}}" wx:key="name">
+                <view class="bar-name">{{item.name}}</view>
+                <view class="bar-track">
+                    <view class="bar-fill is-orange" style="width: {{item.width}}%"></view>
+                </view>
+                <view class="bar-value">{{item.value}}</view>
+            </view>
+        </view>
+
+        <view class="card">
+            <view class="panel-title">{{categoryTitle}}</view>
+            <view class="bar-row" wx:for="{{category}}" wx:key="name">
+                <view class="bar-name">{{item.name}}</view>
+                <view class="bar-track">
+                    <view class="bar-fill is-red" style="width: {{item.width}}%"></view>
+                </view>
+                <view class="bar-value">{{item.value}}</view>
+            </view>
+        </view>
+    </block>
+</view>
