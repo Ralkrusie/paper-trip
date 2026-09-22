@@ -536,6 +536,10 @@ img {
 }
 
 .mode-chip {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
   padding: 8px 6px;
   border: 1px solid var(--stone);
   border-radius: 8px;

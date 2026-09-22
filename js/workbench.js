@@ -33,6 +33,65 @@
     /* 按钮图标（线性描边，跟字体颜色联动） */
     var ICON_PENCIL = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
     var ICON_NAV = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M22 2L11 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 2l-7 20-4-9-9-4 20-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+    /* 通勤方式图标：统一线条风格（24 网格、stroke=currentColor），大尺寸 16px */
+    var MODE_SVG_ATTRS = 'viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+    var ICON_MODES = {
+        walk: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<circle cx="13.2" cy="4.4" r="1.7"/>' +
+            '<path d="M13.2 6.6l-1.3 4.6"/>' +
+            '<path d="M11.9 11.2l2.2 3.1.7 6.2"/>' +
+            '<path d="M11.9 11.2l-2.2 3.7-.8 5.6"/>' +
+            '<path d="M12.8 8.6l2.9 1.9M12.2 9.2L9.2 11.2"/>' +
+            '</svg>',
+        bike: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<circle cx="6" cy="16.5" r="3"/>' +
+            '<circle cx="18" cy="16.5" r="3"/>' +
+            '<path d="M6 16.5L10 9.2h4.6"/>' +
+            '<path d="M14.6 9.2L18 16.5"/>' +
+            '<path d="M10 9.2l3 7.3"/>' +
+            '</svg>',
+        drive: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<path d="M4 15.6v-2.5l2-3.7h12l2 3.7v2.5"/>' +
+            '<path d="M4 13.1h16"/>' +
+            '<circle cx="7.2" cy="15.8" r="1.8"/>' +
+            '<circle cx="16.8" cy="15.8" r="1.8"/>' +
+            '</svg>',
+        taxi: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<path d="M4 15.6v-2.5l2-3.7h12l2 3.7v2.5"/>' +
+            '<path d="M4 13.1h16"/>' +
+            '<circle cx="7.2" cy="15.8" r="1.8"/>' +
+            '<circle cx="16.8" cy="15.8" r="1.8"/>' +
+            '<rect x="10" y="7.2" width="4" height="2.2" rx="0.7"/>' +
+            '</svg>',
+        bus: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<rect x="5.6" y="4.2" width="12.8" height="13.2" rx="2.6"/>' +
+            '<path d="M5.6 11.6h12.8"/>' +
+            '<path d="M9.4 4.2v7.4M14.6 4.2v7.4"/>' +
+            '<circle cx="8.7" cy="14.4" r="0.9"/>' +
+            '<circle cx="15.3" cy="14.4" r="0.9"/>' +
+            '<path d="M8.2 17.4L7 20.6M15.8 17.4L17 20.6"/>' +
+            '</svg>',
+        metro: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<rect x="5.8" y="3.6" width="12.4" height="14" rx="3.2"/>' +
+            '<path d="M8.6 6.6h6.8"/>' +
+            '<path d="M8.6 9.8h6.8"/>' +
+            '<circle cx="8.9" cy="13.6" r="0.9"/>' +
+            '<circle cx="15.1" cy="13.6" r="0.9"/>' +
+            '<path d="M8.6 17.6L7.4 20.6M15.4 17.6L16.6 20.6"/>' +
+            '</svg>',
+        rail: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<path d="M6.2 20.4c-1.4-2-2-4.3-2-6.9V9.8c0-3.6 3-5.8 7.8-5.8s7.8 2.2 7.8 5.8v3.7c0 2.6-.6 4.9-2 6.9z"/>' +
+            '<path d="M4.2 12.9h15.6"/>' +
+            '<path d="M8.4 7.3c.8-.9 2-1.4 3.6-1.4s2.8.5 3.6 1.4"/>' +
+            '<circle cx="8.8" cy="15.6" r="0.9"/>' +
+            '<circle cx="15.2" cy="15.6" r="0.9"/>' +
+            '</svg>',
+        other: '<svg ' + MODE_SVG_ATTRS + '>' +
+            '<circle cx="5.8" cy="12" r="1.4" fill="currentColor" stroke="none"/>' +
+            '<circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>' +
+            '<circle cx="18.2" cy="12" r="1.4" fill="currentColor" stroke="none"/>' +
+            '</svg>'
+    };
     var ICON_REMOVE = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
     var ICON_RESTORE = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M1 4v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     var ICON_X = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -303,6 +362,7 @@
 
         // 通勤方式弹窗
         els.legForm.addEventListener('submit', onLegSubmit);
+        els.legNote.addEventListener('input', updateLegEstimate);
         els.legClearBtn.addEventListener('click', onLegClear);
 
         // 天弹窗
@@ -533,11 +593,13 @@
         line.style.borderLeftColor = legTravelColor(trips);
         var label = document.createElement('span');
         var km = computeDistKm(place.lat, place.lng, nextPlace.lat, nextPlace.lng);
-        label.textContent = '↓ ' + describeLeg(entry) + ' · 直线 ' + km.toFixed(1) + ' km' +
-            (trips >= 2 ? ' · ×' + trips : '');
+        var head = '↓ ' + describeLeg(entry);
+        var tail = ' · 直线 ' + km.toFixed(1) + ' km' + (trips >= 2 ? ' · ×' + trips : '');
+        label.textContent = head + tail;
 
         row.appendChild(line);
         row.appendChild(label);
+        decorateAutoTransit(label, head, tail, entry, place, nextPlace);
         els.itemList.appendChild(row);
     }
 
@@ -555,6 +617,52 @@
         return entry.legMinutes !== null
             ? '约 ' + entry.legMinutes + ' 分（自动估算，点此设置）'
             : '点此选择通勤方式';
+    }
+
+    /* 地铁/公交「备注留空自动显示导航摘要」的缓存与查询（key = 起终点坐标） */
+    var transitAutoCache = {};
+    var transitAutoPending = {};
+
+    function transitAutoKey(fromPlace, toPlace) {
+        return fromPlace.lat.toFixed(5) + ',' + fromPlace.lng.toFixed(5) + '>' +
+            toPlace.lat.toFixed(5) + ',' + toPlace.lng.toFixed(5);
+    }
+
+    function requestTransitSummary(fromPlace, toPlace) {
+        var key = transitAutoKey(fromPlace, toPlace);
+        if (transitAutoCache[key] !== undefined) return Promise.resolve(transitAutoCache[key] || null);
+        if (transitAutoPending[key]) return transitAutoPending[key];
+        if (!window.TripMap || typeof TripMap.transitSummary !== 'function') {
+            transitAutoCache[key] = '';
+            return Promise.resolve(null);
+        }
+        var task = TripMap.transitSummary(fromPlace.lng, fromPlace.lat, toPlace.lng, toPlace.lat)
+            .then(function (summary) {
+                transitAutoCache[key] = summary || '';
+                delete transitAutoPending[key];
+                return summary || null;
+            }, function () {
+                transitAutoCache[key] = '';
+                delete transitAutoPending[key];
+                return null;
+            });
+        transitAutoPending[key] = task;
+        return task;
+    }
+
+    /** 行程列表：地铁/公交且备注留空时，把导航摘要异步补进通勤行 */
+    function decorateAutoTransit(label, head, tail, entry, fromPlace, toPlace) {
+        if ((entry.legMode !== 'metro' && entry.legMode !== 'bus') || entry.legNote) return;
+        var km = computeDistKm(fromPlace.lat, fromPlace.lng, toPlace.lat, toPlace.lng);
+        if (km < 0.05) return;
+        var key = transitAutoKey(fromPlace, toPlace);
+        if (transitAutoCache[key] !== undefined) {
+            if (transitAutoCache[key]) label.textContent = head + ' · ' + transitAutoCache[key] + tail;
+            return;
+        }
+        requestTransitSummary(fromPlace, toPlace).then(function (summary) {
+            if (summary && label.isConnected) label.textContent = head + ' · ' + summary + tail;
+        });
     }
 
     /** 这段通勤在整段行程里需要走的次数（同一对地点去/回都算，跨天累计） */
@@ -1900,7 +2008,7 @@
             var chip = document.createElement('button');
             chip.type = 'button';
             chip.className = 'mode-chip' + (mode === editingLegMode ? ' is-active' : '');
-            chip.textContent = LEG_MODE_LABELS[mode];
+            chip.innerHTML = ICON_MODES[mode] + '<span>' + LEG_MODE_LABELS[mode] + '</span>';
             chip.setAttribute('role', 'radio');
             chip.setAttribute('aria-checked', mode === editingLegMode ? 'true' : 'false');
             chip.addEventListener('click', function () {
@@ -1931,6 +2039,24 @@
             }
         }
         els.legEstimate.textContent = text;
+        fillLegEstimateTransit(km);
+    }
+
+    /** 地铁/公交且备注留空时：在估算行追加导航摘要（X号线 · XX站 → XX站） */
+    function fillLegEstimateTransit(km) {
+        if (!legContext) return;
+        if (editingLegMode !== 'metro' && editingLegMode !== 'bus') return;
+        if (els.legNote.value.trim()) return;
+        if (km < 0.05) return;
+        var key = transitAutoKey(legContext.fromPlace, legContext.toPlace);
+        if (transitAutoCache[key] !== undefined) {
+            if (transitAutoCache[key]) els.legEstimate.textContent += ' · ' + transitAutoCache[key];
+            return;
+        }
+        els.legEstimate.textContent += ' · 查询导航…';
+        requestTransitSummary(legContext.fromPlace, legContext.toPlace).then(function () {
+            if (els.legModal.open && legContext) updateLegEstimate();
+        });
     }
 
     function onLegSubmit(event) {

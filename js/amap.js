@@ -734,6 +734,97 @@
         });
     }
 
+    /** 逆地理取城市名（公交路径规划需要城市参数） */
+    function resolveCityName(lng, lat) {
+        return new Promise(function (resolve) {
+            if (!window.AMap || !window.AMap.plugin) {
+                resolve(null);
+                return;
+            }
+            var settled = false;
+            var timer = window.setTimeout(function () {
+                if (!settled) { settled = true; resolve(null); }
+            }, 6000);
+            window.AMap.plugin(['AMap.Geocoder'], function () {
+                try {
+                    if (!geocoder) geocoder = new window.AMap.Geocoder({});
+                    geocoder.getAddress([lng, lat], function (status, result) {
+                        if (settled) return;
+                        settled = true;
+                        window.clearTimeout(timer);
+                        var comp = status === 'complete' && result && result.regeocode
+                            ? result.regeocode.addressComponent : null;
+                        resolve(comp ? (comp.city || comp.province || null) : null);
+                    });
+                } catch (error) {
+                    if (!settled) { settled = true; window.clearTimeout(timer); resolve(null); }
+                }
+            });
+        });
+    }
+
+    /**
+     * 公交换乘摘要：返回「地铁1号线 · 上海南站 → 衡山路站」样式的首段公交/地铁信息。
+     * 用于地铁/公交通勤备注留空时自动显示导航结果；失败返回 null。
+     */
+    function transitSummary(fromLng, fromLat, toLng, toLat) {
+        return new Promise(function (resolve) {
+            if (!window.AMap || !window.AMap.plugin) {
+                resolve(null);
+                return;
+            }
+            resolveCityName(fromLng, fromLat).then(function (city) {
+                var settled = false;
+                var timer = window.setTimeout(function () {
+                    if (!settled) { settled = true; resolve(null); }
+                }, 8000);
+                window.AMap.plugin(['AMap.Transfer'], function () {
+                    try {
+                        var transfer = new window.AMap.Transfer({
+                            city: city || '全国',
+                            policy: window.AMap.TransferPolicy ? window.AMap.TransferPolicy.LEAST_TIME : 0,
+                            autoFitView: false
+                        });
+                        transfer.search(
+                            new window.AMap.LngLat(Number(fromLng), Number(fromLat)),
+                            new window.AMap.LngLat(Number(toLng), Number(toLat)),
+                            function (status, result) {
+                                if (settled) return;
+                                settled = true;
+                                window.clearTimeout(timer);
+                                resolve(parseTransitResult(status, result));
+                            }
+                        );
+                    } catch (error) {
+                        if (!settled) { settled = true; window.clearTimeout(timer); resolve(null); }
+                    }
+                });
+            });
+        });
+    }
+
+    function parseTransitResult(status, result) {
+        if (status !== 'complete' || !result || !result.plans || !result.plans.length) return null;
+        var segments = result.plans[0].segments || [];
+        for (var i = 0; i < segments.length; i++) {
+            var transit = segments[i] && segments[i].transit;
+            if (!transit || !transit.lines || !transit.lines.length) continue;
+            var line = transit.lines[0];
+            // 去掉线路名里的方向后缀，如「地铁1号线(莘庄--富锦路)」→「地铁1号线」
+            var name = String(line.name || '').replace(/[（(].*$/, '').trim();
+            if (!name) continue;
+            // 上下车站：JS API 实测字段为 on_station / off_station，兼容 departure_stop / arrival_stop 写法
+            var dep = stopName(transit.on_station) || stopName(line.departure_stop);
+            var arr = stopName(transit.off_station) || stopName(line.arrival_stop);
+            return name + (dep && arr ? ' · ' + dep + ' → ' + arr : '');
+        }
+        return null;
+    }
+
+    function stopName(stop) {
+        return stop && stop.name ? String(stop.name) : '';
+    }
+
     /** 地址解析：把「xx路xx号」解析成精确坐标（必要时做地理编码） */
     function geocodeAddress(address) {
         return new Promise(function (resolve, reject) {
@@ -970,6 +1061,7 @@
         getStyleMode: getStyleMode,
         getViewMode: getViewMode,
         reverseGeocode: reverseGeocode,
+        transitSummary: transitSummary,
         geocodeAddress: geocodeAddress,
         nearbyPlaces: nearbyPlaces,
         searchPOI: searchPOI,
