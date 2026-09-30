@@ -23,3 +23,6 @@ desktop.ini
 
 # 本地便利脚本（含本机路径，不随仓库发布）
 启动网页版.bat
+
+# recovery files (personal data, keep out of repo)
+恢复-*.json
