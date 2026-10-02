@@ -2334,6 +2334,7 @@
         '.sheet{max-width:680px;margin:0 auto;background:#f8faee;border:1px solid rgba(31,52,48,.18);border-radius:14px;padding:26px 26px 20px;box-shadow:0 8px 30px rgba(16,40,36,.08)}',
         '.sheet-head{display:flex;gap:14px;align-items:center;padding-bottom:16px;border-bottom:2px solid #2e8f80}',
         '.seal{display:grid;place-items:center;width:46px;height:46px;border-radius:8px;background:#2e8f80;color:#fdf6ec;font-size:26px;font-family:"KaiTi","STKaiti",serif}',
+        '.seal-logo{display:block;height:46px;width:auto;flex:none}',
         'h1{font-size:22px;letter-spacing:.02em}',
         '.brand{color:#5e746e;font-size:12px;letter-spacing:.12em}',
         '.trip-note{margin-top:16px;padding:12px 14px;border:1px dashed rgba(31,52,48,.3);border-radius:10px;background:#fbfcef}',
@@ -2440,13 +2441,19 @@
                 '</section>';
         }).join('');
 
+        /* 左上角品牌标：logo-seal.js 提供的内嵌 base64（保证单文件离线）；缺失时退回文字印鉴 */
+        var sealUri = window.ITINERARY_SEAL_URI || '';
+        var sealHtml = sealUri
+            ? '<img class="seal-logo" src="' + sealUri + '" alt="拾途">'
+            : '<div class="seal">拾</div>';
+
         return '<!DOCTYPE html>\n' +
             '<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n' +
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
             '<title>行程单 · ' + escapeHtml(title) + '</title>\n' +
             '<style>' + ITINERARY_STYLES + '</style>\n</head>\n<body>\n' +
             '<main class="sheet">' +
-            '<header class="sheet-head"><div class="seal">拾</div>' +
+            '<header class="sheet-head">' + sealHtml +
             '<div><h1>' + escapeHtml(title) + '</h1>' +
             '<p class="brand">拾途 Paper Trip · 轻量行程规划</p></div></header>' +
             (note ? '<section class="trip-note"><h2>行程须知</h2><p>' + escapeHtmlMultiline(note) + '</p></section>' : '') +
