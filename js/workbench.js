@@ -1029,6 +1029,7 @@
                     drawnPairs[pairKey] = true;
                     lines.push({
                         color: legTravelColor(countLegTrips(prev.place.id, place.id), dayIndex),
+                        dayIndex: dayIndex,
                         path: [[prev.place.lng, prev.place.lat], [place.lng, place.lat]],
                         realPath: realPath
                     });
@@ -1038,7 +1039,8 @@
             });
         });
 
-        return { points: points, lines: lines, flowPath: flowPath, flowLegs: flowLegs };
+        var activeDayIndex = Math.max(0, Store.state.days.indexOf(Store.getDay(activeDayId)));
+        return { points: points, lines: lines, flowPath: flowPath, flowLegs: flowLegs, activeDayIndex: activeDayIndex };
     }
 
     function renderEmptyStates() {
@@ -1086,6 +1088,9 @@
         if (!Store.getDay(dayId)) return;
         activeDayId = dayId;
         stopTour();
+        if (window.TripMap && TripMap.setActiveDayHighlight) {
+            TripMap.setActiveDayHighlight(Math.max(0, Store.state.days.indexOf(Store.getDay(dayId))));
+        }
         renderDayTabs();
         renderDayMeta();
         renderItems();

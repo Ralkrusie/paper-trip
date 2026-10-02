@@ -16,6 +16,8 @@
     var map = null;
     var markers = {};        // placeId -> AMap.Marker
     var lines = [];          // AMap.Polyline[]
+    var lineRecords = [];    // 连线记录 { main, glow, baseOpacity, dayIndex }（用于按天发光高亮）
+    var activeHighlightDay = 0; // 当前选中的天（该天连线发光高亮，其余天稍淡化）
     var flowMarkers = [];    // 全程流动光点（AMap.Marker）
     var flowDots = [];       // 光点运动数据 { marker, path, cum, totalKm, totalMs }
     var flowRaf = null;
@@ -165,6 +167,7 @@
         if (markerList.length) map.remove(markerList);
         if (flowMarkers.length) map.remove(flowMarkers);
         lines = [];
+        lineRecords = [];
         markers = {};
         flowMarkers = [];
         flowDots = [];
@@ -176,32 +179,74 @@
         lastModel = model || { points: [], lines: [] };
         if (!isReady()) return;
         clearOverlays();
+        if (typeof lastModel.activeDayIndex === 'number') {
+            activeHighlightDay = Math.max(0, lastModel.activeDayIndex);
+        }
 
         (lastModel.lines || []).forEach(function (line) {
             // 有高德真实路线时画实线（沿实际道路/线路），否则退回两站之间的虚线直连
             var real = line.realPath && line.realPath.length >= 2 ? line.realPath : null;
             var drawPath = real || line.path;
             if (!drawPath || drawPath.length < 2) return;
-            var options = {
+            var baseOpacity = real ? 0.92 : 0.88;
+            var baseOptions = {
                 path: drawPath,
-                zIndex: 40,
                 strokeColor: line.color || '#f261a8',
-                strokeOpacity: real ? 0.92 : 0.88,
-                strokeWeight: 4,
                 strokeStyle: real ? 'solid' : 'dashed',
                 lineJoin: 'round',
                 lineCap: 'round',
                 showDir: false
             };
-            if (!real) options.strokeDasharray = [DASH_LEN, DASH_GAP];
-            var polyline = new window.AMap.Polyline(options);
+            if (!real) baseOptions.strokeDasharray = [DASH_LEN, DASH_GAP];
+            // 双层结构：发光底衬（同色更宽更淡，默认透明度 0，选中该天时才点亮）+ 常规线条
+            var glowOptions = {};
+            var mainOptions = {};
+            for (var optionKey in baseOptions) {
+                glowOptions[optionKey] = baseOptions[optionKey];
+                mainOptions[optionKey] = baseOptions[optionKey];
+            }
+            glowOptions.zIndex = 39;
+            glowOptions.strokeWeight = 12;
+            glowOptions.strokeOpacity = 0;
+            var glow = new window.AMap.Polyline(glowOptions);
+            map.add(glow);
+            lines.push(glow);
+            mainOptions.zIndex = 40;
+            mainOptions.strokeWeight = 4;
+            mainOptions.strokeOpacity = baseOpacity;
+            var polyline = new window.AMap.Polyline(mainOptions);
             map.add(polyline);
             lines.push(polyline);
+            lineRecords.push({
+                main: polyline,
+                glow: glow,
+                baseOpacity: baseOpacity,
+                dayIndex: typeof line.dayIndex === 'number' ? line.dayIndex : 0
+            });
         });
+        applyLineHighlight();
         addFlowDot(lastModel.flowPath || [], lastModel.flowLegs || []);
         startFlowLoop();
 
         (lastModel.points || []).forEach(addMarker);
+    }
+
+    /** 按「选中的一天」应用连线高亮：该天连线加深变粗 + 同色淡光晕，其余天稍淡化 */
+    function applyLineHighlight() {
+        lineRecords.forEach(function (record) {
+            var active = record.dayIndex === activeHighlightDay;
+            record.glow.setOptions({ strokeOpacity: active ? 0.22 : 0 });
+            record.main.setOptions({
+                strokeWeight: active ? 5 : 4,
+                strokeOpacity: active ? Math.min(1, record.baseOpacity + 0.08) : record.baseOpacity * 0.5
+            });
+        });
+    }
+
+    /** 供切换选中的一天时调用：只改连线样式，不重建覆盖物 */
+    function setActiveDayHighlight(dayIndex) {
+        activeHighlightDay = Math.max(0, dayIndex || 0);
+        applyLineHighlight();
     }
 
     /**
@@ -1310,6 +1355,7 @@
         isReady: isReady,
         render: render,
         setActive: setActive,
+        setActiveDayHighlight: setActiveDayHighlight,
         focusPlace: focusPlace,
         fitBounds: fitBounds,
         cycleStyle: cycleStyle,
