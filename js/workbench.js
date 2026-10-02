@@ -432,11 +432,12 @@
 
         var timeline = Store.computeTimeline(day, realLegMinutesFor(day));
         var labels = buildStopLabels();
+        var dayIndex = Math.max(0, Store.state.days.indexOf(day));
 
         timeline.forEach(function (entry, index) {
             renderActiveCard(entry, index, labels);
             if (index < timeline.length - 1) {
-                renderConnector(entry, timeline[index + 1]);
+                renderConnector(entry, timeline[index + 1], dayIndex);
             }
         });
 
@@ -558,7 +559,7 @@
         els.itemList.appendChild(card);
     }
 
-    function renderConnector(entry, nextEntry) {
+    function renderConnector(entry, nextEntry, dayIndex) {
         var place = entry.place;
         var nextPlace = nextEntry ? nextEntry.place : null;
         if (!place || !nextPlace) return;
@@ -571,7 +572,7 @@
 
         var trips = countLegTrips(place.id, nextPlace.id);
         var line = document.createElement('i');
-        line.style.borderLeftColor = legTravelColor(trips);
+        line.style.borderLeftColor = legTravelColor(trips, dayIndex);
         var label = document.createElement('span');
         var km = computeDistKm(place.lat, place.lng, nextPlace.lat, nextPlace.lng);
         var suffix = trips >= 2 ? ' · ×' + trips : '';
@@ -764,12 +765,24 @@
         return count;
     }
 
-    /** 连线颜色：粉色系渐深（玫粉 → 粉红 → 玫紫 → 紫，饱和度高，亮底暗底都清楚） */
-    function legTravelColor(trips) {
-        if (trips >= 4) return '#8247d1';
-        if (trips === 3) return '#ad41c3';
-        if (trips === 2) return '#d64397';
-        return '#f261a8';
+    /** 按天区分的连线色系：每天一个色系（4 档渐深对应「这段路要走的次数」1~4+），超过 6 天后循环 */
+    var LEG_DAY_PALETTES = [
+        ['#f261a8', '#d64397', '#ad41c3', '#8247d1'], // 第 1 天 玫粉
+        ['#58b7ea', '#3d90d8', '#326fc2', '#2d4f9e'], // 第 2 天 湖蓝
+        ['#f2a54c', '#de8535', '#c16829', '#9c5220'], // 第 3 天 秋橙
+        ['#4ec9a0', '#30a37e', '#24806a', '#1b5f54'], // 第 4 天 青绿
+        ['#c08df0', '#a267de', '#8349c4', '#65389f'], // 第 5 天 丁香
+        ['#f07a6a', '#d95a4d', '#b8443c', '#93332f']  // 第 6 天 朱红
+    ];
+
+    /** 连线颜色：先按天选色系（第 1 天玫粉、第 2 天湖蓝…），同色系内随「走的次数」渐深（1 浅 → 4+ 深） */
+    function legTravelColor(trips, dayIndex) {
+        var index = Math.max(0, Math.floor(dayIndex || 0)) % LEG_DAY_PALETTES.length;
+        var palette = LEG_DAY_PALETTES[index];
+        if (trips >= 4) return palette[3];
+        if (trips === 3) return palette[2];
+        if (trips === 2) return palette[1];
+        return palette[0];
     }
 
     function metaChip(text, className) {
@@ -970,7 +983,7 @@
             }
         }
 
-        Store.state.days.forEach(function (day) {
+        Store.state.days.forEach(function (day, dayIndex) {
             day.items.forEach(function (item) {
                 if (item.disabled) return;
                 var place = Store.getPlace(item.placeId);
@@ -1015,7 +1028,7 @@
                 if (!drawnPairs[pairKey]) {
                     drawnPairs[pairKey] = true;
                     lines.push({
-                        color: legTravelColor(countLegTrips(prev.place.id, place.id)),
+                        color: legTravelColor(countLegTrips(prev.place.id, place.id), dayIndex),
                         path: [[prev.place.lng, prev.place.lat], [place.lng, place.lat]],
                         realPath: realPath
                     });
