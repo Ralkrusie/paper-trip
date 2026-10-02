@@ -902,22 +902,34 @@
         TripMap.render(model);
     }
 
-    /** 全程统一编号：按「天序 → 天内序」给每个地点分配连续字母（A、B、…、Z；超过 26 个后用 27、28…），跨天不重置 */
+    /** 全程统一编号：按「天序 → 天内序」分配（0～9 → A～Z；超过 36 站直接显示地点名首字），跨天不重置 */
     function buildStopLabels() {
         var labels = {};
         var count = 0;
         Store.state.days.forEach(function (day) {
             day.items.forEach(function (item) {
                 if (item.disabled || labels[item.placeId]) return;
-                if (!Store.getPlace(item.placeId)) return;
-                labels[item.placeId] = count < 26 ? String.fromCharCode(65 + count) : String(count + 1);
+                var place = Store.getPlace(item.placeId);
+                if (!place) return;
+                labels[item.placeId] = stopLabelFor(count, place.name);
                 count++;
             });
         });
         return labels;
     }
 
-    /** 编号展示文本：A →「A 站」；27 →「第 27 站」 */
+    /** 第 index 个站点的标记文字：先 0～9、再 A～Z（共 36 个），之后用地点名首字（兼容 emoji 等代理对） */
+    function stopLabelFor(index, name) {
+        if (index < 10) return String(index);
+        if (index < 36) return String.fromCharCode(65 + index - 10);
+        var value = String(name || '').trim();
+        if (!value) return '·';
+        var code = value.charCodeAt(0);
+        if (code >= 0xD800 && code <= 0xDBFF && value.length > 1) return value.slice(0, 2);
+        return value.charAt(0);
+    }
+
+    /** 编号展示文本：数字 →「第 3 站」；字母、首字 →「A 站」「华 站」 */
     function stopLabelText(label) {
         return /^[0-9]+$/.test(label) ? '第 ' + label + ' 站' : label + ' 站';
     }
