@@ -958,6 +958,7 @@
         // 同一对地点（如酒店 ↔ 歌剧院往返）只画一条，避免虚线相位交错叠成“实线”；
         // 有了高德真实路线后沿真实道路/线路画实线，流动箭头也改走真实轨迹
         var flowPath = [];
+        var flowLegs = [];
         var lines = [];
         var drawnPairs = {};
         var prev = null;
@@ -1000,6 +1001,14 @@
                     pushFlowPoint([place.lng, place.lat]);
                 }
 
+                // 智能配速：记录本段终点在 flowPath 中的下标与估算耗时（真实路线优先，否则按距离估算）
+                var straightKm = computeDistKm(prev.place.lat, prev.place.lng, place.lat, place.lng);
+                var legMinutes = route && route.time ? route.time / 60 : Store.estimateLegMinutes(mode, straightKm);
+                flowLegs.push({
+                    endIndex: flowPath.length - 1,
+                    minutes: legMinutes && isFinite(legMinutes) && legMinutes > 0 ? Math.round(legMinutes) : null
+                });
+
                 var pairKey = prev.place.id < place.id
                     ? prev.place.id + '|' + place.id
                     : place.id + '|' + prev.place.id;
@@ -1016,7 +1025,7 @@
             });
         });
 
-        return { points: points, lines: lines, flowPath: flowPath };
+        return { points: points, lines: lines, flowPath: flowPath, flowLegs: flowLegs };
     }
 
     function renderEmptyStates() {

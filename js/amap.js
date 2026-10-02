@@ -198,7 +198,7 @@
             map.add(polyline);
             lines.push(polyline);
         });
-        addFlowDot(lastModel.flowPath || []);
+        addFlowDot(lastModel.flowPath || [], lastModel.flowLegs || []);
         startFlowLoop();
 
         (lastModel.points || []).forEach(addMarker);
@@ -209,7 +209,7 @@
      * 为何用 marker 而非改虚线：折线画在高德画布上，逐帧 setOptions 受重绘节奏限制会有顿感；
      * marker 位置更新是纯 DOM 变换，与浏览器刷新率一致，顺滑且开销极小。
      */
-    function addFlowDot(pointList) {
+    function addFlowDot(pointList, legList) {
         var path = [];
         (pointList || []).forEach(function (point) {
             var last = path[path.length - 1];
@@ -226,8 +226,10 @@
         var totalKm = cum[cum.length - 1];
         if (totalKm < 0.05) return;
 
-        // 整程一趟控制在 12~45 秒，跑完停一拍再循环
-        var totalMs = Math.min(45000, Math.max(12000, totalKm * 2200));
+        // 智能配速：有分段信息时按「每段通勤的估算时长」分配时间（长途压缩、短途可见、到站稍停）；
+        // 无分段信息时退回按全程距离定速（12~45 秒跑完，停一拍再循环）
+        var timing = buildFlowTiming(path, cum, legList);
+        var totalMs = timing ? timing.totalMs : Math.min(45000, Math.max(12000, totalKm * 2200));
 
         var element = document.createElement('div');
         element.className = 'trip-flow';
@@ -248,8 +250,72 @@
             path: path,
             cum: cum,
             totalKm: totalKm,
-            totalMs: totalMs
+            totalMs: totalMs,
+            steps: timing ? timing.steps : null
         });
+    }
+
+    /**
+     * 为流动箭头生成「分段时刻表」：把每段通勤的估算时长压缩成动画时长（长途开方压缩、短途保底可见），
+     * 中间站点稍作停留（停留阶段 k 不变）。返回 { steps: [{ t0, t1, k0, k1, dwell }], totalMs }，校验不过返回 null。
+     */
+    function buildFlowTiming(path, cum, legList) {
+        if (!legList || !legList.length) return null;
+        var legs = [];
+        var prevIndex = 0;
+        var fromKm = 0;
+        for (var i = 0; i < legList.length; i++) {
+            var index = legList[i].endIndex;
+            if (typeof index !== 'number' || index <= prevIndex || index >= path.length) return null;
+            legs.push({ from: fromKm, to: cum[index], minutes: legList[i].minutes });
+            fromKm = cum[index];
+            prevIndex = index;
+        }
+        if (prevIndex !== path.length - 1) return null;
+
+        var DWELL_MS = 600;
+        var durations = [];
+        var total = 0;
+        for (var j = 0; j < legs.length; j++) {
+            var minutes = legs[j].minutes;
+            var ms = minutes && minutes > 0
+                ? 900 + 340 * Math.sqrt(minutes)              // 有估算：按时长开方压缩（10 分钟≈2 秒，4 小时≈7.5 秒）
+                : 900 + 900 * Math.sqrt(Math.max(legs[j].to - legs[j].from, 0.05)); // 无估算：按本段路径长度
+            ms = Math.min(9000, Math.max(900, ms));
+            durations.push(ms);
+            total += ms + (j < legs.length - 1 ? DWELL_MS : 0);
+        }
+        // 总时长整体兜底到 12~90 秒（等比缩放，不影响各段相对快慢）
+        var scale = total < 12000 ? 12000 / total : (total > 90000 ? 90000 / total : 1);
+        var steps = [];
+        var t = 0;
+        for (var k = 0; k < legs.length; k++) {
+            var dur = durations[k] * scale;
+            steps.push({ t0: t, t1: t + dur, k0: legs[k].from, k1: legs[k].to, dwell: false });
+            t += dur;
+            if (k < legs.length - 1) {
+                var wait = DWELL_MS * scale;
+                steps.push({ t0: t, t1: t + wait, k0: legs[k].to, k1: legs[k].to, dwell: true });
+                t += wait;
+            }
+        }
+        return { steps: steps, totalMs: t };
+    }
+
+    /** 按时刻表求箭头位置；到站停留期间返回 null（保持原位、不转向） */
+    function flowPositionAt(dot, t) {
+        if (!dot.steps) {
+            return pointAlong(dot.path, dot.cum, Math.min(t / dot.totalMs, 1) * dot.totalKm);
+        }
+        for (var i = 0; i < dot.steps.length; i++) {
+            var step = dot.steps[i];
+            if (t <= step.t1 || i === dot.steps.length - 1) {
+                if (step.dwell) return null;
+                var ratio = step.t1 > step.t0 ? Math.min(Math.max((t - step.t0) / (step.t1 - step.t0), 0), 1) : 1;
+                return pointAlong(dot.path, dot.cum, step.k0 + (step.k1 - step.k0) * ratio);
+            }
+        }
+        return null;
     }
 
     /** 单个 rAF 循环统一驱动所有光点 */
@@ -262,10 +328,12 @@
                 if (tourState.start === null) tourState.start = now;
                 var tourDot = tourState.dot;
                 var tourFrac = Math.min((now - tourState.start) / tourState.totalMs, 1);
-                var tourPos = pointAlong(tourDot.path, tourDot.cum, tourFrac * tourDot.totalKm);
-                tourDot.marker.setPosition([tourPos.lng, tourPos.lat]);
-                tourDot.element.style.transform = 'rotate(' + tourPos.angle.toFixed(1) + 'deg)';
-                if (map) map.setCenter([tourPos.lng, tourPos.lat]);
+                var tourPos = flowPositionAt(tourDot, tourFrac * tourDot.totalMs);
+                if (tourPos) {
+                    tourDot.marker.setPosition([tourPos.lng, tourPos.lat]);
+                    tourDot.element.style.transform = 'rotate(' + tourPos.angle.toFixed(1) + 'deg)';
+                    if (map) map.setCenter([tourPos.lng, tourPos.lat]);
+                }
                 if (tourFrac >= 1) {
                     endFlowTour('done');
                     return;
@@ -277,8 +345,8 @@
             for (var i = 0; i < flowDots.length; i++) {
                 var dot = flowDots[i];
                 var cycleMs = dot.totalMs + FLOW_HOLD;
-                var frac = Math.min((elapsed % cycleMs) / dot.totalMs, 1);
-                var pos = pointAlong(dot.path, dot.cum, frac * dot.totalKm);
+                var pos = flowPositionAt(dot, Math.min(elapsed % cycleMs, dot.totalMs));
+                if (!pos) continue; // 到站停留：保持原位
                 dot.marker.setPosition([pos.lng, pos.lat]);
                 dot.element.style.transform = 'rotate(' + pos.angle.toFixed(1) + 'deg)';
             }
@@ -303,7 +371,7 @@
         tourState = {
             dot: flowDots[0],
             start: null,
-            totalMs: Math.min(70000, Math.max(18000, flowDots[0].totalKm * 2600)),
+            totalMs: flowDots[0].totalMs,
             onEnd: options && typeof options.onEnd === 'function' ? options.onEnd : null
         };
         if (map.getZoom() < 14) map.setZoom(14);
