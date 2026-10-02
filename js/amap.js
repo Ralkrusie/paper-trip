@@ -363,6 +363,15 @@
         return 6371 * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
     }
 
+    /** 未安排圆标内显示的名称首字（保留 emoji 等代理对） */
+    function firstChar(text) {
+        var value = String(text || '').trim();
+        if (!value) return '·';
+        var code = value.charCodeAt(0);
+        if (code >= 0xD800 && code <= 0xDBFF && value.length > 1) return value.slice(0, 2);
+        return value.charAt(0);
+    }
+
     function addMarker(point) {
         var element = document.createElement('div');
         element.className = 'trip-marker' +
@@ -375,11 +384,9 @@
             'aria-label',
             (point.isPlanned ? point.labelText + '：' : '未安排地点：') + point.name
         );
-        // 颜色统一由分类（POI 类型）决定：已安排点为分类色，未安排小圆点同色系
+        // 颜色统一由分类（POI 类型）决定：已安排点为分类色，未安排圆标同色系
         element.style.setProperty('--marker-color', point.color || '#3f7e73');
-        if (point.isPlanned) {
-            element.textContent = point.label;
-        }
+        element.textContent = point.isPlanned ? point.label : firstChar(point.name);
 
         function activate() {
             if (callbacks.onMarkerClick) callbacks.onMarkerClick(point.placeId);
@@ -392,7 +399,7 @@
             }
         });
 
-        var size = point.isPlanned ? 26 : 12;
+        var size = point.isPlanned ? 26 : 20;
         var scale = markerScale();
         element.style.setProperty('--marker-scale', scale);
         var marker = new window.AMap.Marker({

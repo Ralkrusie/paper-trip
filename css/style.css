@@ -1022,12 +1022,12 @@ img {
 }
 
 .trip-marker.is-dot {
-  width: calc(12px * var(--marker-scale, 1));
-  height: calc(12px * var(--marker-scale, 1));
+  width: calc(20px * var(--marker-scale, 1));
+  height: calc(20px * var(--marker-scale, 1));
   border-width: 2px;
   background: var(--marker-color, #3f7e73);
-  opacity: 0.75;
-  font-size: 0;
+  opacity: 0.85;
+  font-size: calc(10px * var(--marker-scale, 1));
 }
 
 .trip-marker.is-dot.is-active {
